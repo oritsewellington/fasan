@@ -3,10 +3,13 @@
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
-    baseUrl: "/api",
+    // Automatically grabs the URL from your active .env file
+    baseUrl: import.meta.env.VITE_API_URL || "/api",
     prepareHeaders: (headers, { getState }) => {
       const token = getState().auth.token;
-      if (token) headers.set("Authorization", `Bearer ${token}`);
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
       return headers;
     },
   }),
