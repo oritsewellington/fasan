@@ -1,4 +1,5 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 
 import Layout from "./components/layout/Layout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -29,55 +30,66 @@ import OrganizerEventsPage from "./pages/organizer/OrganizerEventsPage.jsx";
 import OrganizerEventDetailPage from "./pages/organizer/OrganizerEventDetailPage.jsx";
 import OrganizerCategoriesPage from "./pages/organizer/OrganizerCategoryPage.jsx";
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 export default function App() {
   return (
-    <Routes>
-      <Route element={<Layout />}>
-        <Route index element={<HomePage />} />
-        <Route path="about" element={<AboutPage />} />
-        <Route path="contact" element={<ContactPage />} />
-        <Route path="login" element={<LoginPage />} />
+    <>
+      <ScrollToTop />
+      <Routes>
+        <Route element={<Layout />}>
+          <Route index element={<HomePage />} />
+          <Route path="about" element={<AboutPage />} />
+          <Route path="contact" element={<ContactPage />} />
+          <Route path="login" element={<LoginPage />} />
+          <Route path="category/:categoryId" element={<CategoryPage />} />
+          <Route path="events" element={<EventsPage />} />
+          <Route path="events/:eventId" element={<EventDetailPage />} />
+          <Route
+            path="events/:eventId/candidates/:candidateId"
+            element={<CandidatePage />}
+          />
+          <Route path="vote/success" element={<VoteSuccessPage />} />
 
-        {/* Category landing — clicking a category from the homepage lands here */}
-        <Route path="category/:categoryId" element={<CategoryPage />} />
-
-        <Route path="events" element={<EventsPage />} />
-        <Route path="events/:eventId" element={<EventDetailPage />} />
-        <Route
-          path="events/:eventId/candidates/:candidateId"
-          element={<CandidatePage />}
-        />
-        <Route path="vote/success" element={<VoteSuccessPage />} />
-
-        {/* Admin */}
-        <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
-          <Route path="admin" element={<AdminLayout />}>
-            <Route index element={<AdminOverviewPage />} />
-            <Route path="events" element={<AdminEventsPage />} />
-            <Route path="events/:eventId" element={<AdminEventDetailPage />} />
-            <Route path="categories" element={<AdminCategoriesPage />} />
-            <Route path="organizers" element={<AdminOrganizersPage />} />
-            <Route path="transactions" element={<AdminTransactionsPage />} />
+          {/* Admin */}
+          <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+            <Route path="admin" element={<AdminLayout />}>
+              <Route index element={<AdminOverviewPage />} />
+              <Route path="events" element={<AdminEventsPage />} />
+              <Route
+                path="events/:eventId"
+                element={<AdminEventDetailPage />}
+              />
+              <Route path="categories" element={<AdminCategoriesPage />} />
+              <Route path="organizers" element={<AdminOrganizersPage />} />
+              <Route path="transactions" element={<AdminTransactionsPage />} />
+            </Route>
           </Route>
-        </Route>
 
-        {/* Organizer */}
-        <Route
-          element={<ProtectedRoute allowedRoles={["organizer", "admin"]} />}
-        >
-          <Route path="organizer" element={<OrganizerLayout />}>
-            <Route index element={<OrganizerOverviewPage />} />
-            <Route path="events" element={<OrganizerEventsPage />} />
-            <Route
-              path="events/:eventId"
-              element={<OrganizerEventDetailPage />}
-            />
-            <Route path="categories" element={<OrganizerCategoriesPage />} />
+          {/* Organizer */}
+          <Route
+            element={<ProtectedRoute allowedRoles={["organizer", "admin"]} />}
+          >
+            <Route path="organizer" element={<OrganizerLayout />}>
+              <Route index element={<OrganizerOverviewPage />} />
+              <Route path="events" element={<OrganizerEventsPage />} />
+              <Route
+                path="events/:eventId"
+                element={<OrganizerEventDetailPage />}
+              />
+              <Route path="categories" element={<OrganizerCategoriesPage />} />
+            </Route>
           </Route>
-        </Route>
 
-        <Route path="*" element={<NotFoundPage />} />
-      </Route>
-    </Routes>
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
+      </Routes>
+    </>
   );
 }

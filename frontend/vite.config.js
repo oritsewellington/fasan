@@ -5,9 +5,10 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    // Only used in local dev - Vercel ignores this
     proxy: {
-      "/api": { target: "https://fasan.onrender.com", changeOrigin: true },
-      "/uploads": { target: "https://fasan.onrender.com", changeOrigin: true },
+      "/api": { target: "http://localhost:5000", changeOrigin: true },
+      "/uploads": { target: "http://localhost:5000", changeOrigin: true },
     },
   },
 });
