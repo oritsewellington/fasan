@@ -131,11 +131,11 @@ export default function HomePage() {
           </h1>
 
           <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto mb-4 font-light leading-relaxed">
-            {totalCategories || "26+"} award categories. Vote for the best
-            minds, leaders, artists, and icons of the Faculty of Arts, UNIBEN.
+            {totalCategories} award categories. Vote for the best minds,
+            leaders, artists, and icons of the Faculty of Arts, UNIBEN.
           </p>
           <p className="text-sm text-gold-400 font-medium mb-10">
-            {formatNumber(totalVotesAcrossEvents || 4200)}+ votes cast •{" "}
+            {formatNumber(totalVotesAcrossEvents)}+ votes cast •{" "}
             {liveEvents.length} live event{liveEvents.length !== 1 ? "s" : ""}
           </p>
 
@@ -166,7 +166,7 @@ export default function HomePage() {
                 label: "Award Categories",
               },
               {
-                value: `${formatNumber(totalVotesAcrossEvents || 4200)}+`,
+                value: `${formatNumber(totalVotesAcrossEvents)}+`,
                 label: "Votes Cast",
               },
               { value: "100%", label: "Secure Payments" },
