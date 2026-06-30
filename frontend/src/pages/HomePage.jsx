@@ -119,7 +119,7 @@ export default function HomePage() {
         <div className="page-container relative z-10 pt-12 pb-20 text-center">
           <div className="inline-flex items-center gap-2 px-5 py-2 bg-gold-500/15 border border-gold-500/30 rounded-full text-gold-300 text-xs font-bold tracking-widest uppercase mb-8 animate-fade-in">
             <span className="w-2 h-2 bg-gold-400 rounded-full animate-pulse" />
-            FASA Awards 2026 — University of Benin
+            FASAN Awards 2026 — University of Benin
           </div>
 
           <h1 className="font-body text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-[1.05] mb-6 text-balance">
