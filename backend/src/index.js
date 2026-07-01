@@ -13,6 +13,7 @@ import candidateRoutes from "./routes/candidate.routes.js";
 import voteRoutes from "./routes/vote.routes.js";
 import statsRoutes from "./routes/stats.routes.js";
 import categoriesRoutes from "./routes/category.routes.js";
+import pollRoutes from "./routes/poll.routes.js"; // NEW
 
 dotenv.config();
 
@@ -41,6 +42,9 @@ app.use(
     message: { message: "Too many payment requests. Please slow down." },
   }),
 );
+// Polls get hit frequently (every ~20s per open leaderboard) — its own
+// generous limit so it never competes with the payment rate limit above.
+app.use("/api/polls", rateLimit({ windowMs: 60 * 1000, max: 120 }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
@@ -48,6 +52,7 @@ app.use("/api/events", candidateRoutes);
 app.use("/api/votes", voteRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/categories", categoriesRoutes);
+app.use("/api/polls", pollRoutes); // NEW
 app.get("/api/health", (_, res) => res.json({ ok: true }));
 
 app.use((err, _req, res, _next) => {

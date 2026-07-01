@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   Crown,
@@ -7,6 +8,8 @@ import {
   Users,
   ArrowRight,
   Trophy,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useGetEventQuery } from "../../store/api/eventsApi.js";
 import { useGetCandidatesQuery } from "../../store/api/candidatesApi.js";
@@ -26,12 +29,21 @@ import {
 } from "../../components/ui/index.jsx";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
+const CANDIDATES_PER_PAGE = 12;
 
 export default function EventDetailPage() {
   const { eventId } = useParams();
   const { data: event, isLoading: evLoading } = useGetEventQuery(eventId);
   const { data: candidates = [], isLoading: cLoading } =
     useGetCandidatesQuery(eventId);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const candidatesTopRef = useRef(null);
+
+  // Reset to page 1 whenever we land on a different event.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [eventId]);
 
   if (evLoading || cLoading) return <PageLoader />;
 
@@ -50,6 +62,27 @@ export default function EventDetailPage() {
   const ranked = rankCandidates(candidates);
   const totalVotes = getTotalVotes(candidates);
   const leaderVotes = ranked[0]?.totalVotes || 0;
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(ranked.length / CANDIDATES_PER_PAGE),
+  );
+  const safePage = Math.min(currentPage, totalPages);
+  const startIdx = (safePage - 1) * CANDIDATES_PER_PAGE;
+  // Rank stays tied to the full standings, not the page slice, so medals
+  // and numbers never reset per page.
+  const paginatedCandidates = ranked
+    .map((candidate, idx) => ({ candidate, rank: idx + 1 }))
+    .slice(startIdx, startIdx + CANDIDATES_PER_PAGE);
+
+  const goToPage = (page) => {
+    const clamped = Math.min(Math.max(page, 1), totalPages);
+    setCurrentPage(clamped);
+    candidatesTopRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
 
   return (
     <div
@@ -241,7 +274,11 @@ export default function EventDetailPage() {
       )}
 
       {/* ── Candidates ───────────────────────────────────────────────── */}
-      <div className="page-container" style={{ padding: "20px 16px 40px" }}>
+      <div
+        className="page-container"
+        style={{ padding: "20px 16px 40px" }}
+        ref={candidatesTopRef}
+      >
         {ranked.length === 0 ? (
           <EmptyState
             icon={Crown}
@@ -256,7 +293,7 @@ export default function EventDetailPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                marginBottom: 16,
+                marginBottom: 6,
                 flexWrap: "wrap",
                 gap: 8,
               }}
@@ -283,12 +320,34 @@ export default function EventDetailPage() {
               </span>
             </div>
 
+            {/* Pagination summary */}
+            {totalPages > 1 && (
+              <p
+                style={{
+                  fontSize: 12,
+                  color: "#9ca3af",
+                  margin: "0 0 14px",
+                }}
+              >
+                Showing{" "}
+                <span style={{ fontWeight: 600, color: "#6b7280" }}>
+                  {startIdx + 1}–
+                  {Math.min(startIdx + CANDIDATES_PER_PAGE, ranked.length)}
+                </span>{" "}
+                of{" "}
+                <span style={{ fontWeight: 600, color: "#6b7280" }}>
+                  {ranked.length}
+                </span>
+              </p>
+            )}
+
             {/* Grid — 2 cols on phones, 3 on tablets, 4 on desktop */}
             <div
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(2, 1fr)",
                 gap: 12,
+                marginTop: totalPages > 1 ? 0 : 10,
               }}
             >
               <style>{`
@@ -296,11 +355,11 @@ export default function EventDetailPage() {
                 @media(min-width: 900px)  { .cand-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 16px !important; } }
               `}</style>
               <div className="cand-grid" style={{ display: "contents" }}>
-                {ranked.map((candidate, idx) => (
+                {paginatedCandidates.map(({ candidate, rank }) => (
                   <CandidateCard
                     key={candidate._id}
                     candidate={candidate}
-                    rank={idx + 1}
+                    rank={rank}
                     totalVotes={totalVotes}
                     leaderVotes={leaderVotes}
                     eventId={eventId}
@@ -309,6 +368,14 @@ export default function EventDetailPage() {
                 ))}
               </div>
             </div>
+
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={safePage}
+                totalPages={totalPages}
+                onPageChange={goToPage}
+              />
+            )}
 
             {/* Legend */}
             {totalVotes > 0 && (
@@ -346,6 +413,139 @@ export default function EventDetailPage() {
   );
 }
 
+/**
+ * Clean numbered pagination, styled to match this page's gold/amber palette.
+ * Truncates to ~7 visible buttons max so it holds up with large candidate
+ * lists (e.g. a "Most Popular" category with 60+ nominees).
+ */
+function Pagination({ currentPage, totalPages, onPageChange }) {
+  const getPageNumbers = () => {
+    const delta = 1;
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+
+    for (let i = 1; i <= totalPages; i++) {
+      if (
+        i === 1 ||
+        i === totalPages ||
+        (i >= currentPage - delta && i <= currentPage + delta)
+      ) {
+        range.push(i);
+      }
+    }
+
+    for (const i of range) {
+      if (l) {
+        if (i - l === 2) {
+          rangeWithDots.push(l + 1);
+        } else if (i - l !== 1) {
+          rangeWithDots.push("...");
+        }
+      }
+      rangeWithDots.push(i);
+      l = i;
+    }
+
+    return rangeWithDots;
+  };
+
+  const btnBase = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    fontSize: 13,
+    fontWeight: 600,
+    border: "1px solid #e5e7eb",
+    background: "#fff",
+    color: "#4b5563",
+    cursor: "pointer",
+    transition: "all 0.15s",
+  };
+
+  return (
+    <nav
+      aria-label="Candidates pagination"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+        marginTop: 28,
+        flexWrap: "wrap",
+      }}
+    >
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        aria-label="Previous page"
+        style={{
+          ...btnBase,
+          opacity: currentPage === 1 ? 0.35 : 1,
+          pointerEvents: currentPage === 1 ? "none" : "auto",
+        }}
+      >
+        <ChevronLeft size={16} />
+      </button>
+
+      {getPageNumbers().map((page, idx) =>
+        page === "..." ? (
+          <span
+            key={`dots-${idx}`}
+            style={{
+              width: 36,
+              height: 36,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#d1d5db",
+              fontSize: 13,
+              userSelect: "none",
+            }}
+          >
+            …
+          </span>
+        ) : (
+          <button
+            key={page}
+            onClick={() => onPageChange(page)}
+            aria-current={page === currentPage ? "page" : undefined}
+            style={
+              page === currentPage
+                ? {
+                    ...btnBase,
+                    background: "linear-gradient(135deg, #fbbf24, #f59e0b)",
+                    borderColor: "#f59e0b",
+                    color: "#fff",
+                    boxShadow: "0 3px 10px rgba(245,158,11,0.35)",
+                  }
+                : btnBase
+            }
+          >
+            {page}
+          </button>
+        ),
+      )}
+
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        aria-label="Next page"
+        style={{
+          ...btnBase,
+          opacity: currentPage === totalPages ? 0.35 : 1,
+          pointerEvents: currentPage === totalPages ? "none" : "auto",
+        }}
+      >
+        <ChevronRight size={16} />
+      </button>
+    </nav>
+  );
+}
+
 function CandidateCard({
   candidate,
   rank,
@@ -354,6 +554,10 @@ function CandidateCard({
   eventId,
   isOpen,
 }) {
+  // Tracks whether the photo URL 404s or fails to decode, so we can fall
+  // back to a clean placeholder instead of a broken-image icon.
+  const [imgError, setImgError] = useState(false);
+
   // Bar relative to leader (best UX for race standings)
   const relPct =
     leaderVotes > 0
@@ -362,6 +566,15 @@ function CandidateCard({
   // Label shows share of total votes (factually accurate number)
   const sharePct = calcPercent(candidate.totalVotes, totalVotes).toFixed(1);
   const isLeader = rank === 1 && (candidate.totalVotes || 0) > 0;
+
+  const initials = (candidate.name || "?")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("");
+
+  const showPhoto = candidate.photo && !imgError;
 
   return (
     <Link
@@ -384,40 +597,78 @@ function CandidateCard({
         if (!isOpen) return;
         e.currentTarget.style.transform = "translateY(-3px)";
         e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.12)";
+        const img = e.currentTarget.querySelector("[data-photo-zoom]");
+        if (img) img.style.transform = "scale(1.06)";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = "";
         e.currentTarget.style.boxShadow = isLeader
           ? "0 4px 20px rgba(245,158,11,0.18)"
           : "0 1px 3px rgba(0,0,0,0.06)";
+        const img = e.currentTarget.querySelector("[data-photo-zoom]");
+        if (img) img.style.transform = "scale(1)";
       }}
     >
-      {/* Photo */}
-      <div style={{ position: "relative" }}>
-        {candidate.photo ? (
+      {/* Photo — fixed portrait aspect-ratio (4:5) instead of a
+          viewport-width-based height. A vw-based height shrinks the visible
+          area disproportionately as columns increase (e.g. 4-col desktop),
+          which crops faces awkwardly. Aspect-ratio keeps every photo framed
+          the same way regardless of grid density or screen size. */}
+      <div
+        style={{
+          position: "relative",
+          width: "100%",
+          aspectRatio: "4 / 5",
+          overflow: "hidden",
+          background: "linear-gradient(135deg,#f3f4f6,#e5e7eb)",
+        }}
+      >
+        {showPhoto ? (
           <img
+            data-photo-zoom
             src={candidate.photo}
             alt={candidate.name}
+            loading="lazy"
+            decoding="async"
+            onError={() => setImgError(true)}
             style={{
               width: "100%",
-              height: "min(52vw, 220px)",
+              height: "100%",
               objectFit: "cover",
-              objectPosition: "top",
+              objectPosition: "center 18%",
               display: "block",
+              transition: "transform 0.35s ease-out",
             }}
           />
         ) : (
           <div
             style={{
               width: "100%",
-              height: "min(52vw, 220px)",
-              background: "linear-gradient(135deg,#f3f4f6,#e5e7eb)",
+              height: "100%",
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
+              gap: 6,
             }}
           >
-            <Crown size={32} style={{ color: "#d1d5db" }} />
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: "50%",
+                background: "linear-gradient(135deg,#fbbf24,#f59e0b)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                fontWeight: 800,
+                fontSize: 17,
+                boxShadow: "0 2px 8px rgba(245,158,11,0.3)",
+              }}
+            >
+              {initials || <Crown size={22} />}
+            </div>
           </div>
         )}
 
@@ -485,8 +736,8 @@ function CandidateCard({
             left: 0,
             right: 0,
             background:
-              "linear-gradient(to top, rgba(0,0,0,0.82), transparent)",
-            padding: "28px 10px 10px",
+              "linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.35) 65%, transparent)",
+            padding: "30px 10px 10px",
           }}
         >
           <p
@@ -500,6 +751,7 @@ function CandidateCard({
               display: "-webkit-box",
               WebkitLineClamp: 2,
               WebkitBoxOrient: "vertical",
+              textShadow: "0 1px 3px rgba(0,0,0,0.4)",
             }}
           >
             {candidate.name}
@@ -507,9 +759,12 @@ function CandidateCard({
           {candidate.department && (
             <p
               style={{
-                color: "rgba(255,255,255,0.6)",
+                color: "rgba(255,255,255,0.65)",
                 fontSize: 11,
                 margin: "2px 0 0",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
               }}
             >
               {candidate.department}

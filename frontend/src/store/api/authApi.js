@@ -1,29 +1,30 @@
-﻿import { apiSlice } from './apiSlice.js';
+﻿import { apiSlice } from "./apiSlice.js";
 
 export const authApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     login: builder.mutation({
-      query: (credentials) => ({ url: '/auth/login', method: 'POST', body: credentials }),
+      query: (credentials) => ({
+        url: "/auth/login",
+        method: "POST",
+        body: credentials,
+      }),
     }),
     getMe: builder.query({
-      query: () => '/auth/me',
-      providesTags: ['Organizer'],
+      query: () => "/auth/me",
+      providesTags: ["Staff"],
     }),
-    getOrganizers: builder.query({
-      query: () => '/auth/organizers',
-      providesTags: ['Organizer'],
+    // Admin only — the 1-2 seeded logins that can manage all events/candidates
+    getStaff: builder.query({
+      query: () => "/auth/staff",
+      providesTags: ["Staff"],
     }),
-    createOrganizer: builder.mutation({
-      query: (body) => ({ url: '/auth/organizers', method: 'POST', body }),
-      invalidatesTags: ['Organizer'],
+    createStaff: builder.mutation({
+      query: (body) => ({ url: "/auth/staff", method: "POST", body }),
+      invalidatesTags: ["Staff"],
     }),
-    updateCommission: builder.mutation({
-      query: ({ organizerId, commission }) => ({
-        url: `/auth/organizers/${organizerId}/commission`,
-        method: 'PATCH',
-        body: { commission },
-      }),
-      invalidatesTags: ['Organizer'],
+    deleteStaff: builder.mutation({
+      query: (staffId) => ({ url: `/auth/staff/${staffId}`, method: "DELETE" }),
+      invalidatesTags: ["Staff"],
     }),
   }),
 });
@@ -31,7 +32,7 @@ export const authApi = apiSlice.injectEndpoints({
 export const {
   useLoginMutation,
   useGetMeQuery,
-  useGetOrganizersQuery,
-  useCreateOrganizerMutation,
-  useUpdateCommissionMutation,
+  useGetStaffQuery,
+  useCreateStaffMutation,
+  useDeleteStaffMutation,
 } = authApi;

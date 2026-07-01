@@ -1,9 +1,44 @@
 import dotenv from "dotenv";
 import { connectDB } from "../utils/db.js";
 import Category from "../models/Category.model.js";
+import Event from "../models/Event.model.js";
 import User from "../models/User.model.js";
 
 dotenv.config();
+
+// ---------------------------------------------------------------------
+// Accounts
+// ---------------------------------------------------------------------
+const SEED_USERS = [
+  {
+    name: "Zondo",
+    email: "zondo@gmail.com",
+    password: "zondo2031",
+    role: "admin",
+  },
+  {
+    name: "Fasan Staff 1",
+    email: "fasan1@gmail.com",
+    password: "fasan2031",
+    role: "staff",
+  },
+  {
+    name: "Fasan Staff 2",
+    email: "fasan@gmail.com",
+    password: "fasan2031",
+    role: "staff",
+  },
+];
+
+// ---------------------------------------------------------------------
+// Event defaults — adjust these to match what you actually want to
+// charge / how long voting should run. Voting starts immediately
+// (now) and I've defaulted the window to 30 days; change EVENT_DURATION_DAYS
+// if that's wrong.
+// ---------------------------------------------------------------------
+const ORGANIZATION_NAME = "FASA — Faculty of Arts Students' Association";
+const PRICE_PER_VOTE_KOBO = 10000; // ₦100 per vote
+const EVENT_DURATION_DAYS = 14;
 
 const SEED_CATEGORIES = [
   {
@@ -232,40 +267,104 @@ const SEED_CATEGORIES = [
   },
 ];
 
-async function seed() {
-  await connectDB();
+async function seedUsers() {
+  let created = 0,
+    skipped = 0;
+  const usersByEmail = {};
 
-  const admin = await User.findOne({ role: "admin" });
+  for (const u of SEED_USERS) {
+    let user = await User.findOne({ email: u.email });
+    if (user) {
+      skipped++;
+    } else {
+      // Password gets hashed automatically by the User model's pre-save hook
+      user = await User.create({
+        name: u.name,
+        email: u.email,
+        password: u.password,
+        role: u.role,
+      });
+      created++;
+    }
+    usersByEmail[u.email] = user;
+  }
 
-  let created = 0;
-  let updated = 0;
-  let skipped = 0;
+  console.log(`Users — ${created} created, ${skipped} already existed.`);
+  return usersByEmail;
+}
+
+async function seedCategoriesAndEvents(admin) {
+  const now = new Date();
+  const endDate = new Date(
+    now.getTime() + EVENT_DURATION_DAYS * 24 * 60 * 60 * 1000,
+  );
+
+  let catsCreated = 0,
+    catsSkipped = 0,
+    eventsCreated = 0,
+    eventsSkipped = 0;
 
   for (const cat of SEED_CATEGORIES) {
-    const exists = await Category.findOne({ name: cat.name }).collation({
+    let category = await Category.findOne({ name: cat.name }).collation({
       locale: "en",
       strength: 2,
     });
 
-    if (exists) {
-      // Backfill description on existing categories that don't have one yet
-      if (!exists.description && cat.description) {
-        exists.description = cat.description;
-        await exists.save();
-        updated++;
-      } else {
-        skipped++;
+    if (category) {
+      catsSkipped++;
+      if (!category.description && cat.description) {
+        category.description = cat.description;
+        await category.save();
       }
+    } else {
+      category = await Category.create({ ...cat, createdBy: admin?._id });
+      catsCreated++;
+    }
+
+    // One event per category — carries the category's own name + description
+    const existingEvent = await Event.findOne({ categoryId: category._id });
+    if (existingEvent) {
+      eventsSkipped++;
       continue;
     }
 
-    await Category.create({ ...cat, createdBy: admin?._id });
-    created++;
+    await Event.create({
+      title: category.name,
+      description: category.description,
+      organization: ORGANIZATION_NAME,
+      category: category.name,
+      categoryId: category._id,
+      startDate: now,
+      endDate,
+      isOpen: true,
+      pricePerVote: PRICE_PER_VOTE_KOBO,
+      createdBy: admin?._id,
+    });
+    eventsCreated++;
   }
 
   console.log(
-    `Seed complete — ${created} created, ${updated} updated with descriptions, ${skipped} skipped (already complete).`,
+    `Categories — ${catsCreated} created, ${catsSkipped} already existed.`,
   );
+  console.log(
+    `Events — ${eventsCreated} created, ${eventsSkipped} already had an event.`,
+  );
+}
+
+async function seed() {
+  await connectDB();
+
+  const usersByEmail = await seedUsers();
+  const admin = usersByEmail["zondo@gmail.com"];
+
+  await seedCategoriesAndEvents(admin);
+
+  console.log("\nLogins:");
+  SEED_USERS.forEach((u) =>
+    console.log(`  ${u.role.padEnd(6)} — ${u.email} / ${u.password}`),
+  );
+
+  console.log("\nSeed complete.");
   process.exit(0);
 }
 

@@ -17,12 +17,14 @@ import EventsPage from "./pages/voter/EventsPage.jsx";
 import EventDetailPage from "./pages/voter/EventDetailPage.jsx";
 import CandidatePage from "./pages/voter/CandidatePage.jsx";
 import VoteSuccessPage from "./pages/voter/VoteSuccessPage.jsx";
+import PollsIndexPage from "./pages/voter/PollsIndexPage.jsx"; // NEW
+import EventResultsPage from "./pages/voter/EventResultsPage.jsx"; // NEW
 
 import AdminOverviewPage from "./pages/admin/AdminOverviewPage.jsx";
 import AdminEventsPage from "./pages/admin/AdminEventsPage.jsx";
 import AdminEventDetailPage from "./pages/admin/AdminEventDetailPage.jsx";
 import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage.jsx";
-import AdminOrganizersPage from "./pages/admin/AdminOrganizersPage.jsx";
+import AdminStaffPage from "./pages/admin/AdminStaffPage.jsx";
 import AdminTransactionsPage from "./pages/admin/AdminTransactionsPage.jsx";
 
 import OrganizerOverviewPage from "./pages/organizer/OrganizerOverviewPage.jsx";
@@ -55,8 +57,13 @@ export default function App() {
             path="events/:eventId/candidates/:candidateId"
             element={<CandidatePage />}
           />
+          <Route
+            path="events/:eventId/results"
+            element={<EventResultsPage />}
+          />{" "}
+          {/* NEW */}
+          <Route path="polls" element={<PollsIndexPage />} /> {/* NEW */}
           <Route path="vote/success" element={<VoteSuccessPage />} />
-
           {/* Admin */}
           <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
             <Route path="admin" element={<AdminLayout />}>
@@ -67,15 +74,13 @@ export default function App() {
                 element={<AdminEventDetailPage />}
               />
               <Route path="categories" element={<AdminCategoriesPage />} />
-              <Route path="organizers" element={<AdminOrganizersPage />} />
+              <Route path="staff" element={<AdminStaffPage />} />
               <Route path="transactions" element={<AdminTransactionsPage />} />
             </Route>
           </Route>
-
-          {/* Organizer */}
-          <Route
-            element={<ProtectedRoute allowedRoles={["organizer", "admin"]} />}
-          >
+          {/* Staff (formerly "organizer") — role string updated to match
+              the new User model. Both admin and staff land here. */}
+          <Route element={<ProtectedRoute allowedRoles={["staff", "admin"]} />}>
             <Route path="organizer" element={<OrganizerLayout />}>
               <Route index element={<OrganizerOverviewPage />} />
               <Route path="events" element={<OrganizerEventsPage />} />
@@ -86,7 +91,6 @@ export default function App() {
               <Route path="categories" element={<OrganizerCategoriesPage />} />
             </Route>
           </Route>
-
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

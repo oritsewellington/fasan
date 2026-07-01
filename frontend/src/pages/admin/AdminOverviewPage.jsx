@@ -6,6 +6,7 @@ import {
   Vote,
   ArrowRight,
   TrendingUp,
+  Trophy,
 } from "lucide-react";
 import { useGetAdminStatsQuery } from "../../store/api/statsApi.js";
 import { useGetEventsQuery } from "../../store/api/eventsApi.js";
@@ -33,39 +34,49 @@ export default function AdminOverviewPage() {
 
   return (
     <div className="page-container py-8 animate-fade-in">
-      <div className="mb-8">
-        <p className="section-label mb-1">Admin Dashboard</p>
-        <h1 className="font-display text-2xl font-bold text-gray-900">
-          Platform Overview
-        </h1>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <p className="section-label mb-1">Admin Dashboard</p>
+          <h1 className="font-display text-2xl font-bold text-gray-900">
+            Platform Overview
+          </h1>
+        </div>
+        <Link
+          to="/polls"
+          className="text-sm font-medium text-gold-600 hover:text-gold-700 flex items-center gap-1.5"
+        >
+          <Trophy size={15} /> View live results
+        </Link>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <p className="section-label mb-3 text-gray-400">Revenue</p>
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <StatCard
           label="Total Revenue"
           value={formatNaira(stats?.totalRevenue || 0)}
           icon={DollarSign}
-          colorClass="text-emerald-600"
         />
         <StatCard
-          label="Platform Earnings"
-          value={formatNaira(stats?.platformCuts || 0)}
+          label={`Platform Earnings (${((stats?.platformCommission || 0.1) * 100).toFixed(0)}%)`}
+          value={formatNaira(stats?.platformEarnings || 0)}
           icon={TrendingUp}
           colorClass="text-gold-600"
         />
+        <StatCard
+          label="Payable to School Body"
+          value={formatNaira(stats?.schoolPayable || 0)}
+          icon={DollarSign}
+          colorClass="text-emerald-600"
+        />
+      </div>
+
+      <p className="section-label mb-3 text-gray-400">Activity</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
           label="Total Votes"
           value={formatNumber(stats?.totalVotes || 0)}
           icon={Vote}
         />
-        <StatCard
-          label="Organizers"
-          value={stats?.totalOrganizers || 0}
-          icon={Users}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
           label="Total Events"
           value={stats?.totalEvents || 0}
@@ -78,14 +89,9 @@ export default function AdminOverviewPage() {
           colorClass="text-emerald-600"
         />
         <StatCard
-          label="Organizer Payouts"
-          value={formatNaira(stats?.organizerPayouts || 0)}
-          icon={DollarSign}
-        />
-        <StatCard
-          label="Commission Rate"
-          value={`${((stats?.platformCommission || 0.15) * 100).toFixed(0)}%`}
-          icon={TrendingUp}
+          label="Staff Accounts"
+          value={stats?.totalStaff || 0}
+          icon={Users}
         />
       </div>
 
@@ -110,7 +116,7 @@ export default function AdminOverviewPage() {
             recentEvents.map((ev) => (
               <Link
                 key={ev._id}
-                to="/admin/events"
+                to={`/admin/events/${ev._id}`}
                 className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors"
               >
                 <div className="min-w-0">

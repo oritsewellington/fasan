@@ -1,12 +1,20 @@
-import { Router } from 'express';
-import { login, getMe, getOrganizers, createOrganizer, updateCommission } from '../controllers/auth.controller.js';
-import { protect, requireAdmin } from '../middleware/auth.middleware.js';
+import { Router } from "express";
+import {
+  login,
+  getMe,
+  getStaff,
+  createStaff,
+  deleteStaff,
+} from "../controllers/auth.controller.js";
+import { protect, requireAdmin } from "../middleware/auth.middleware.js";
 
 const router = Router();
-router.post('/login', login);
-router.get('/me', protect, getMe);
-router.get('/organizers', protect, requireAdmin, getOrganizers);
-router.post('/organizers', protect, requireAdmin, createOrganizer);
-router.patch('/organizers/:id/commission', protect, requireAdmin, updateCommission);
+router.post("/login", login);
+router.get("/me", protect, getMe);
+
+// Admin only — seed/revoke staff logins
+router.get("/staff", protect, requireAdmin, getStaff);
+router.post("/staff", protect, requireAdmin, createStaff);
+router.delete("/staff/:id", protect, requireAdmin, deleteStaff);
 
 export default router;

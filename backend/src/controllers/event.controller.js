@@ -1,7 +1,6 @@
 import path from "path";
 import Event from "../models/Event.model.js";
 import Candidate from "../models/Candidate.model.js";
-import User from "../models/User.model.js";
 import Category from "../models/Category.model.js";
 import {
   buildUrl,
@@ -12,28 +11,25 @@ import {
 // GET /api/events
 export async function getEvents(req, res) {
   const filter = {};
-  if (req.query.mine === "true" && req.user?.role === "organizer") {
-    filter.organizer = req.user._id;
-  }
   if (req.query.categoryId) filter.categoryId = req.query.categoryId;
 
   const events = await Event.find(filter)
     .sort("-createdAt")
-    .populate("organizer", "name email platformCommission");
+    .populate("createdBy", "name email");
   res.json(events);
 }
 
 // GET /api/events/:id
 export async function getEvent(req, res) {
   const event = await Event.findById(req.params.id).populate(
-    "organizer",
-    "name email platformCommission",
+    "createdBy",
+    "name email",
   );
   if (!event) return res.status(404).json({ message: "Event not found." });
   res.json(event);
 }
 
-// POST /api/events  (admin OR organizer, multipart/form-data)
+// POST /api/events  (any admin or staff, multipart/form-data)
 export async function createEvent(req, res) {
   const {
     title,
@@ -45,28 +41,11 @@ export async function createEvent(req, res) {
     categoryId,
   } = req.body;
 
-  // Organizers can only create events for themselves — ignore any organizerId they send
-  let organizerId = req.body.organizerId;
-  if (req.user.role === "organizer") {
-    organizerId = req.user._id.toString();
-  }
-
-  if (
-    !title ||
-    !organization ||
-    !startDate ||
-    !endDate ||
-    !pricePerVote ||
-    !organizerId
-  )
+  if (!title || !organization || !startDate || !endDate || !pricePerVote)
     return res.status(400).json({
       message:
-        "title, organization, startDate, endDate, pricePerVote, organizerId are required.",
+        "title, organization, startDate, endDate, pricePerVote are required.",
     });
-
-  const organizer = await User.findById(organizerId);
-  if (!organizer)
-    return res.status(404).json({ message: "Organizer not found." });
 
   let category = null;
   if (categoryId) {
@@ -93,31 +72,21 @@ export async function createEvent(req, res) {
     startDate,
     endDate,
     pricePerVote: parseInt(pricePerVote),
-    platformCommission: organizer.platformCommission,
-    organizer: organizer._id,
-    organizerId: organizer._id,
     bannerImage,
     bannerFilename,
     category: category?.name || "",
     categoryId: category?._id || null,
+    createdBy: req.user._id, // audit trail only — not used for permissions
   });
 
-  await User.findByIdAndUpdate(organizer._id, { $inc: { totalEvents: 1 } });
+  await req.user.updateOne({ $inc: { totalEventsCreated: 1 } });
   res.status(201).json(event);
 }
 
-// PUT /api/events/:id  (admin OR the event's owning organizer)
+// PUT /api/events/:id  (any admin or staff — no ownership check)
 export async function updateEvent(req, res) {
   const event = await Event.findById(req.params.id);
   if (!event) return res.status(404).json({ message: "Event not found." });
-
-  if (req.user.role === "organizer") {
-    const ownerId = (event.organizer || event.organizerId)?.toString();
-    if (ownerId !== req.user._id.toString())
-      return res
-        .status(403)
-        .json({ message: "You can only edit your own events." });
-  }
 
   const fields = [
     "title",
@@ -159,18 +128,10 @@ export async function updateEvent(req, res) {
   res.json(event);
 }
 
-// DELETE /api/events/:id  (admin OR the event's owning organizer)
+// DELETE /api/events/:id  (any admin or staff — no ownership check)
 export async function deleteEvent(req, res) {
   const event = await Event.findById(req.params.id);
   if (!event) return res.status(404).json({ message: "Event not found." });
-
-  if (req.user.role === "organizer") {
-    const ownerId = (event.organizer || event.organizerId)?.toString();
-    if (ownerId !== req.user._id.toString())
-      return res
-        .status(403)
-        .json({ message: "You can only delete your own events." });
-  }
 
   deleteFile(event.bannerImage);
   await Candidate.deleteMany({ event: event._id });
@@ -178,18 +139,10 @@ export async function deleteEvent(req, res) {
   res.json({ message: "Event deleted." });
 }
 
-// PATCH /api/events/:id/toggle  (admin OR the event's owning organizer)
+// PATCH /api/events/:id/toggle  (any admin or staff — no ownership check)
 export async function toggleEvent(req, res) {
   const event = await Event.findById(req.params.id);
   if (!event) return res.status(404).json({ message: "Event not found." });
-
-  if (req.user.role === "organizer") {
-    const ownerId = (event.organizer || event.organizerId)?.toString();
-    if (ownerId !== req.user._id.toString())
-      return res
-        .status(403)
-        .json({ message: "You can only toggle your own events." });
-  }
 
   event.isOpen = !event.isOpen;
   await event.save();

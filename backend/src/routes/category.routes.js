@@ -6,17 +6,15 @@ import {
   updateCategory,
   deleteCategory,
 } from "../controllers/category.controller.js";
-import { protect, requireOrganizer } from "../middleware/auth.middleware.js";
+import { protect, requireStaff } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-// Public — anyone browsing the site can see categories
 router.get("/", getCategories);
 router.get("/:id", getCategory);
 
-// Protected — admins and organizers can create/manage categories
-router.post("/", protect, requireOrganizer, createCategory);
-router.patch("/:id", protect, requireOrganizer, updateCategory);
-router.delete("/:id", protect, requireOrganizer, deleteCategory);
+router.post("/", protect, requireStaff, createCategory);
+router.patch("/:id", protect, requireStaff, updateCategory);
+router.delete("/:id", protect, requireStaff, deleteCategory);
 
 export default router;

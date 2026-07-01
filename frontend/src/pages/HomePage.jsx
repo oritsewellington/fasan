@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   Crown,
@@ -9,6 +9,7 @@ import {
   Star,
   Zap,
   ChevronRight,
+  ChevronLeft,
   Award,
   Music,
   Shirt,
@@ -49,11 +50,19 @@ const GROUP_COLORS = {
   General: "from-orange-400 to-gold-500",
 };
 
+const CATEGORIES_PER_PAGE = 12;
+
 export default function HomePage() {
   const [activeGroup, setActiveGroup] = useState("All");
-  const { data: events = [] } = useGetEventsQuery({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const categoriesSectionRef = useRef(null);
+
+  const { data: events = [], isLoading: eventsLoading } = useGetEventsQuery({});
   const { data: categories = [], isLoading: catLoading } =
     useGetCategoriesQuery();
+
+  // A single flag for "do we actually know the real numbers yet"
+  const statsLoading = eventsLoading || catLoading;
 
   const totalCategories = categories.length;
   const categoryGroups = [...new Set(categories.map((c) => c.group))].filter(
@@ -72,6 +81,33 @@ export default function HomePage() {
     activeGroup === "All"
       ? categories
       : categories.filter((c) => c.group === activeGroup);
+
+  // Reset to page 1 whenever the filter changes so users don't land on an
+  // empty page 5 of a 2-page filtered result.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeGroup]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredCategories.length / CATEGORIES_PER_PAGE),
+  );
+  // Guard against a stale page number if the filtered set shrinks.
+  const safePage = Math.min(currentPage, totalPages);
+  const startIdx = (safePage - 1) * CATEGORIES_PER_PAGE;
+  const paginatedCategories = filteredCategories.slice(
+    startIdx,
+    startIdx + CATEGORIES_PER_PAGE,
+  );
+
+  const goToPage = (page) => {
+    const clamped = Math.min(Math.max(page, 1), totalPages);
+    setCurrentPage(clamped);
+    categoriesSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
 
   return (
     <div className="animate-fade-in">
@@ -131,12 +167,25 @@ export default function HomePage() {
           </h1>
 
           <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto mb-4 font-light leading-relaxed">
-            {totalCategories} award categories. Vote for the best minds,
-            leaders, artists, and icons of the Faculty of Arts, UNIBEN.
+            {statsLoading ? (
+              <span className="inline-block h-6 w-64 max-w-full bg-white/10 rounded-md animate-pulse align-middle" />
+            ) : (
+              <>
+                {totalCategories} award categories. Vote for the best minds,
+                leaders, artists, and icons of the Faculty of Arts, UNIBEN.
+              </>
+            )}
           </p>
           <p className="text-sm text-gold-400 font-medium mb-10">
-            {formatNumber(totalVotesAcrossEvents)}+ votes cast •{" "}
-            {liveEvents.length} live event{liveEvents.length !== 1 ? "s" : ""}
+            {statsLoading ? (
+              <span className="inline-block h-4 w-48 bg-gold-500/15 rounded-md animate-pulse align-middle" />
+            ) : (
+              <>
+                {formatNumber(totalVotesAcrossEvents)}+ votes cast •{" "}
+                {liveEvents.length} live event
+                {liveEvents.length !== 1 ? "s" : ""}
+              </>
+            )}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -160,27 +209,34 @@ export default function HomePage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-10 mt-16">
-            {[
-              {
-                value: totalCategories ? totalCategories.toString() : "—",
-                label: "Award Categories",
-              },
-              {
-                value: `${formatNumber(totalVotesAcrossEvents)}+`,
-                label: "Votes Cast",
-              },
-              { value: "100%", label: "Secure Payments" },
-              { value: liveEvents.length.toString(), label: "Live Events" },
-            ].map(({ value, label }) => (
-              <div key={label} className="text-center">
-                <div className="text-3xl font-bold text-white font-body">
-                  {value}
-                </div>
-                <div className="text-xs text-gray-400 font-medium mt-1 tracking-wide">
-                  {label}
-                </div>
-              </div>
-            ))}
+            {statsLoading
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="text-center">
+                    <div className="h-8 w-14 mx-auto bg-white/10 rounded-md animate-pulse" />
+                    <div className="h-3 w-20 mt-2 bg-white/5 rounded-md animate-pulse" />
+                  </div>
+                ))
+              : [
+                  {
+                    value: totalCategories.toString(),
+                    label: "Award Categories",
+                  },
+                  {
+                    value: `${formatNumber(totalVotesAcrossEvents)}+`,
+                    label: "Votes Cast",
+                  },
+                  { value: "100%", label: "Secure Payments" },
+                  { value: liveEvents.length.toString(), label: "Live Events" },
+                ].map(({ value, label }) => (
+                  <div key={label} className="text-center animate-fade-in">
+                    <div className="text-3xl font-bold text-white font-body">
+                      {value}
+                    </div>
+                    <div className="text-xs text-gray-400 font-medium mt-1 tracking-wide">
+                      {label}
+                    </div>
+                  </div>
+                ))}
           </div>
         </div>
 
@@ -228,7 +284,11 @@ export default function HomePage() {
         </section>
       )}
 
-      <section id="categories" className="py-20 bg-white scroll-mt-16">
+      <section
+        id="categories"
+        ref={categoriesSectionRef}
+        className="py-20 bg-white scroll-mt-16"
+      >
         <div className="page-container">
           <div className="text-center mb-12">
             <p className="section-label mb-3">FASAN Awards 2026</p>
@@ -282,8 +342,32 @@ export default function HomePage() {
                 })}
               </div>
 
+              {/* Results count */}
+              <div className="flex items-center justify-between mb-4 px-1">
+                <p className="text-xs text-gray-400">
+                  Showing{" "}
+                  <span className="font-medium text-gray-600">
+                    {filteredCategories.length === 0 ? 0 : startIdx + 1}–
+                    {Math.min(
+                      startIdx + CATEGORIES_PER_PAGE,
+                      filteredCategories.length,
+                    )}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-medium text-gray-600">
+                    {filteredCategories.length}
+                  </span>{" "}
+                  categories
+                </p>
+                {totalPages > 1 && (
+                  <p className="text-xs text-gray-400">
+                    Page {safePage} of {totalPages}
+                  </p>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredCategories.map((cat) => {
+                {paginatedCategories.map((cat) => {
                   const Icon = GROUP_ICONS[cat.group] || Award;
                   const gradColor =
                     GROUP_COLORS[cat.group] || "from-gold-400 to-gold-600";
@@ -336,6 +420,14 @@ export default function HomePage() {
                   );
                 })}
               </div>
+
+              {totalPages > 1 && (
+                <Pagination
+                  currentPage={safePage}
+                  totalPages={totalPages}
+                  onPageChange={goToPage}
+                />
+              )}
             </>
           )}
 
@@ -418,6 +510,94 @@ export default function HomePage() {
         </div>
       </section>
     </div>
+  );
+}
+
+/**
+ * Clean numbered pagination with smart truncation.
+ * Shows: [Prev] 1 … 4 5 6 … 24 [Next]
+ * Never renders more than ~7 page buttons regardless of total pages,
+ * so this stays usable even with 100+ categories.
+ */
+function Pagination({ currentPage, totalPages, onPageChange }) {
+  const getPageNumbers = () => {
+    const delta = 1; // pages to show on each side of current
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+
+    for (let i = 1; i <= totalPages; i++) {
+      if (
+        i === 1 ||
+        i === totalPages ||
+        (i >= currentPage - delta && i <= currentPage + delta)
+      ) {
+        range.push(i);
+      }
+    }
+
+    for (const i of range) {
+      if (l) {
+        if (i - l === 2) {
+          rangeWithDots.push(l + 1);
+        } else if (i - l !== 1) {
+          rangeWithDots.push("...");
+        }
+      }
+      rangeWithDots.push(i);
+      l = i;
+    }
+
+    return rangeWithDots;
+  };
+
+  return (
+    <nav
+      aria-label="Category pagination"
+      className="flex items-center justify-center gap-1.5 mt-12"
+    >
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        aria-label="Previous page"
+        className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50 disabled:opacity-30 disabled:pointer-events-none transition-all"
+      >
+        <ChevronLeft size={16} />
+      </button>
+
+      {getPageNumbers().map((page, idx) =>
+        page === "..." ? (
+          <span
+            key={`dots-${idx}`}
+            className="w-9 h-9 flex items-center justify-center text-gray-300 text-sm select-none"
+          >
+            …
+          </span>
+        ) : (
+          <button
+            key={page}
+            onClick={() => onPageChange(page)}
+            aria-current={page === currentPage ? "page" : undefined}
+            className={`w-9 h-9 rounded-xl text-sm font-medium border transition-all ${
+              page === currentPage
+                ? "bg-gray-900 text-white border-gray-900 shadow-sm"
+                : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            {page}
+          </button>
+        ),
+      )}
+
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        aria-label="Next page"
+        className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50 disabled:opacity-30 disabled:pointer-events-none transition-all"
+      >
+        <ChevronRight size={16} />
+      </button>
+    </nav>
   );
 }
 

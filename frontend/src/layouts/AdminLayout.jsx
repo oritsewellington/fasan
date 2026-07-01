@@ -16,7 +16,7 @@ const links = [
   { to: "/admin", label: "Overview", icon: LayoutDashboard, end: true },
   { to: "/admin/events", label: "Events", icon: Calendar },
   { to: "/admin/categories", label: "Categories", icon: Tag },
-  { to: "/admin/organizers", label: "Organizers", icon: Users },
+  { to: "/admin/staff", label: "Staff", icon: Users },
   { to: "/admin/transactions", label: "Transactions", icon: Receipt },
 ];
 
@@ -79,7 +79,6 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* Mobile bottom nav */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-gray-950 border-t border-gray-800 flex justify-around py-2">
         {links.map(({ to, label, icon: Icon, end }) => (
           <NavLink

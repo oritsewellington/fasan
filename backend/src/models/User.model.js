@@ -1,19 +1,29 @@
-import mongoose from 'mongoose';
-import bcrypt   from 'bcryptjs';
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
-const userSchema = new mongoose.Schema({
-  name:     { type: String, required: true, trim: true },
-  email:    { type: String, required: true, unique: true, lowercase: true, trim: true },
-  password: { type: String, required: true, minlength: 6, select: false },
-  role:     { type: String, enum: ['admin', 'organizer'], default: 'organizer' },
-  platformCommission: { type: Number, default: 0.15, min: 0, max: 1 },
-  totalEarnings: { type: Number, default: 0 },
-  totalEvents:   { type: Number, default: 0 },
-  activeEvents:  { type: Number, default: 0 },
-}, { timestamps: true });
+const userSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    password: { type: String, required: true, minlength: 6, select: false },
 
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+    // 'admin' = you (full control, incl. managing staff accounts)
+    // 'staff' = seeded accounts that can manage all events/candidates
+    role: { type: String, enum: ["admin", "staff"], default: "staff" },
+
+    totalEventsCreated: { type: Number, default: 0 }, // simple activity count, informational only
+  },
+  { timestamps: true },
+);
+
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
@@ -28,4 +38,4 @@ userSchema.methods.toSafeJSON = function () {
   return obj;
 };
 
-export default mongoose.model('User', userSchema);
+export default mongoose.model("User", userSchema);
