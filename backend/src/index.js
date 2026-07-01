@@ -13,7 +13,8 @@ import candidateRoutes from "./routes/candidate.routes.js";
 import voteRoutes from "./routes/vote.routes.js";
 import statsRoutes from "./routes/stats.routes.js";
 import categoriesRoutes from "./routes/category.routes.js";
-import pollRoutes from "./routes/poll.routes.js"; // NEW
+import pollRoutes from "./routes/poll.routes.js";
+import webhookRoutes from "./routes/webhook.routes.js"; // NEW
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -26,7 +27,20 @@ app.use(
   }),
 );
 app.use(morgan("dev"));
-app.use(express.json({ limit: "10mb" }));
+
+// The `verify` callback stashes the raw request bytes on req.rawBody
+// BEFORE JSON parsing. Paystack's webhook signature is computed over
+// those exact raw bytes — verifying against re-serialized JSON will
+// never match, even for a legitimate request. Applies globally but
+// only webhook.controller.js actually reads req.rawBody.
+app.use(
+  express.json({
+    limit: "10mb",
+    verify: (req, res, buf) => {
+      req.rawBody = buf;
+    },
+  }),
+);
 
 app.use("/api", rateLimit({ windowMs: 15 * 60 * 1000, max: 300 }));
 app.use(
@@ -40,6 +54,9 @@ app.use(
 // Polls get hit frequently (every ~20s per open leaderboard) — its own
 // generous limit so it never competes with the payment rate limit above.
 app.use("/api/polls", rateLimit({ windowMs: 60 * 1000, max: 120 }));
+// Webhooks get their own limit too — Paystack retries on timeout/non-2xx,
+// and those retries must never compete with the payment-initiation limiter.
+app.use("/api/webhooks", rateLimit({ windowMs: 60 * 1000, max: 60 }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
@@ -47,7 +64,8 @@ app.use("/api/events", candidateRoutes);
 app.use("/api/votes", voteRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/categories", categoriesRoutes);
-app.use("/api/polls", pollRoutes); // NEW
+app.use("/api/polls", pollRoutes);
+app.use("/api/webhooks", webhookRoutes); // NEW
 app.get("/api/health", (_, res) => res.json({ ok: true }));
 
 app.use((err, _req, res, _next) => {

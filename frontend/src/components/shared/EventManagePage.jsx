@@ -76,7 +76,7 @@ export default function EventManagePage({ basePath = "/organizer" }) {
   };
 
   return (
-    <div className="page-container py-8 animate-fade-in">
+    <div className="page-container py-8 animate-fade-in overflow-x-hidden">
       <Link
         to={`${basePath}/events`}
         className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-6"
@@ -85,8 +85,8 @@ export default function EventManagePage({ basePath = "/organizer" }) {
       </Link>
 
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <EventStatusBadge
               status={getEventStatus(
                 event.startDate,
@@ -98,7 +98,7 @@ export default function EventManagePage({ basePath = "/organizer" }) {
               <span className="badge-gold">{event.category}</span>
             )}
           </div>
-          <h1 className="font-display text-2xl font-bold text-gray-900">
+          <h1 className="font-display text-2xl font-bold text-gray-900 break-words">
             {event.title}
           </h1>
           <p className="text-sm text-gray-500 mt-1">{event.organization}</p>
@@ -108,7 +108,7 @@ export default function EventManagePage({ basePath = "/organizer" }) {
             setEditingCandidate(null);
             setShowForm(true);
           }}
-          className="btn-primary"
+          className="btn-primary flex-shrink-0"
         >
           <Plus size={16} /> Add Candidate
         </button>
@@ -135,8 +135,8 @@ export default function EventManagePage({ basePath = "/organizer" }) {
         <StatCard label="Candidates" value={candidates.length} icon={Users} />
       </div>
 
-      <div className="card p-6">
-        <div className="flex items-center justify-between mb-5">
+      <div className="card p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
           <h2 className="font-display font-bold text-gray-900">Candidates</h2>
           <p className="text-xs text-gray-400">
             Numbers auto-assigned: next is FASA-
@@ -160,66 +160,88 @@ export default function EventManagePage({ basePath = "/organizer" }) {
             {ranked.map((c, idx) => (
               <div
                 key={c._id}
-                className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors"
+                className="p-3 rounded-xl hover:bg-gray-50 transition-colors"
               >
-                <span className="text-xs font-bold text-gray-400 w-6">
-                  #{idx + 1}
-                </span>
-                {c.photo ? (
-                  <img
-                    src={c.photo}
-                    alt={c.name}
-                    className="w-12 h-12 rounded-xl object-cover object-top flex-shrink-0"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-xl bg-gray-100 flex-shrink-0" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold text-gray-900 text-sm truncate">
-                      {c.name}
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-gray-400 w-5 flex-shrink-0">
+                    #{idx + 1}
+                  </span>
+                  {c.photo ? (
+                    <img
+                      src={c.photo}
+                      alt={c.name}
+                      className="w-11 h-11 rounded-xl object-cover object-top flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-11 h-11 rounded-xl bg-gray-100 flex-shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="font-semibold text-gray-900 text-sm truncate max-w-[140px] sm:max-w-none">
+                        {c.name}
+                      </p>
+                      <span className="text-2xs px-1.5 py-0.5 bg-gold-50 text-gold-700 rounded font-bold flex-shrink-0">
+                        {c.candidateCode ||
+                          "FASA-" + String(c.candidateNumber).padStart(4, "0")}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 truncate">
+                      {c.department}
+                      {c.level ? ` ${c.level}` : ""}
                     </p>
-                    <span className="text-2xs px-1.5 py-0.5 bg-gold-50 text-gold-700 rounded font-bold flex-shrink-0">
-                      {c.candidateCode ||
-                        "FASA-" + String(c.candidateNumber).padStart(4, "0")}
-                    </span>
                   </div>
-                  <p className="text-xs text-gray-400">
-                    {c.department}
-                    {c.level ? `${c.level}` : ""}
-                  </p>
-                  <div className="mt-1.5 max-w-xs">
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-sm font-bold text-gray-900">
+                      {formatNumber(c.totalVotes || 0)}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {calcPercent(c.totalVotes, totalVotes).toFixed(1)}%
+                    </p>
+                  </div>
+                  <div className="hidden sm:flex gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => {
+                        setEditingCandidate(c);
+                        setShowForm(true);
+                      }}
+                      className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(c)}
+                      className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-2 pl-8 flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
                     <ProgressBar
                       value={c.totalVotes}
                       max={leaderVotes}
                       height="h-1.5"
                     />
                   </div>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-sm font-bold text-gray-900">
-                    {formatNumber(c.totalVotes || 0)}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {calcPercent(c.totalVotes, totalVotes).toFixed(1)}%
-                  </p>
-                </div>
-                <div className="flex gap-1 flex-shrink-0">
-                  <button
-                    onClick={() => {
-                      setEditingCandidate(c);
-                      setShowForm(true);
-                    }}
-                    className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700"
-                  >
-                    <Edit2 size={14} />
-                  </button>
-                  <button
-                    onClick={() => setDeleteTarget(c)}
-                    className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <div className="flex sm:hidden gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => {
+                        setEditingCandidate(c);
+                        setShowForm(true);
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+                    >
+                      <Edit2 size={13} />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(c)}
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

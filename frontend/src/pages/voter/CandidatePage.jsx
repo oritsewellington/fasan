@@ -50,24 +50,26 @@ export default function CandidatePage() {
   const [verifyPayment] = useVerifyPaymentMutation();
   const { initializePayment: openPaystack } = usePaystack();
 
-  // Load Paystack inline script
+  // Load Paystack's inline script once. NOT per-mount: this component
+  // remounts every time someone navigates to a different candidate, and
+  // removing + re-injecting the script on every navigation risks a user
+  // clicking "Vote" in the gap where window.PaystackPop is briefly
+  // undefined. Loading it once and leaving it is safe.
   useEffect(() => {
+    if (window.PaystackPop || document.getElementById("paystack-inline-js"))
+      return;
     const s = document.createElement("script");
+    s.id = "paystack-inline-js";
     s.src = "https://js.paystack.co/v1/inline.js";
     s.async = true;
     document.body.appendChild(s);
-    return () => {
-      try {
-        document.body.removeChild(s);
-      } catch {}
-    };
   }, []);
 
   if (cLoad || evLoad) return <PageLoader />;
   if (!candidate || !event)
     return (
-      <div style={{ padding: "80px 20px", textAlign: "center" }}>
-        <p style={{ color: "#6b7280", marginBottom: 16 }}>Not found.</p>
+      <div className="py-20 px-5 text-center">
+        <p className="text-gray-500 mb-4">Not found.</p>
         <Link to="/events" className="btn-primary">
           Back to events
         </Link>
@@ -119,6 +121,7 @@ export default function CandidatePage() {
         quantity,
         reference,
       }).unwrap();
+
       openPaystack({
         email: voterEmail,
         amount: totalAmount,
@@ -129,21 +132,33 @@ export default function CandidatePage() {
           eventTitle: event.title,
         },
         onSuccess: async () => {
+          // Paystack has already told the browser this charge succeeded —
+          // the money has moved. From here on we ALWAYS move the voter
+          // forward to a confirmation screen, never back to a page where
+          // "Continue to pay" is clickable again.
+          const successParams = new URLSearchParams({
+            ref: reference,
+            candidate: candidate.name,
+            votes: String(quantity),
+            event: event.title,
+          });
+
           try {
             await verifyPayment(reference).unwrap();
             toast.success("Vote confirmed! Thank you! 🎉");
-            navigate(
-              `/vote/success?ref=${reference}&candidate=${encodeURIComponent(candidate.name)}&votes=${quantity}&event=${encodeURIComponent(event.title)}`,
-            );
           } catch (err) {
-            toast.error(
-              err?.data?.message || "Verification failed. Contact support.",
+            successParams.set("pending", "true");
+            toast.info(
+              "Payment received — confirming your vote, this can take a moment.",
             );
           } finally {
             setProcessing(false);
+            navigate(`/vote/success?${successParams.toString()}`);
           }
         },
         onClose: () => {
+          // Popup closed WITHOUT onSuccess firing — no charge went
+          // through, safe to let them try again from the form.
           setProcessing(false);
           toast.info("Payment cancelled.");
         },
@@ -155,184 +170,55 @@ export default function CandidatePage() {
   };
 
   return (
-    <div
-      className="animate-fade-in"
-      style={{
-        fontFamily: "Inter, sans-serif",
-        background: "#f9fafb",
-        minHeight: "100vh",
-      }}
-    >
+    <div className="animate-fade-in bg-gray-50 min-h-screen">
       {/* ── Sticky top bar ───────────────────────────────────────────── */}
-      <div
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 30,
-          background: "rgba(249,250,251,0.92)",
-          backdropFilter: "blur(8px)",
-          borderBottom: "1px solid #f3f4f6",
-          padding: "12px 16px",
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-        }}
-      >
+      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-sm border-b border-gray-100 px-4 py-3 flex items-center gap-3">
         <Link
           to={`/events/${eventId}`}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            border: "1px solid #e5e7eb",
-            background: "#fff",
-            color: "#374151",
-            flexShrink: 0,
-          }}
+          className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors flex-shrink-0"
         >
           <ArrowLeft size={16} />
         </Link>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p
-            style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#111827",
-              margin: 0,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-bold text-gray-900 truncate">
             {candidate.name}
           </p>
-          <p
-            style={{
-              fontSize: 11,
-              color: "#9ca3af",
-              margin: 0,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {event.title}
-          </p>
+          <p className="text-[11px] text-gray-400 truncate">{event.title}</p>
         </div>
         <button
           onClick={handleShare}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            border: "1px solid #e5e7eb",
-            background: "#fff",
-            color: "#374151",
-            cursor: "pointer",
-            flexShrink: 0,
-          }}
+          className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors flex-shrink-0"
         >
           <Share2 size={15} />
         </button>
       </div>
 
-      <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 0 80px" }}>
+      <div className="max-w-[680px] mx-auto pb-20">
         {/* ── Hero photo ───────────────────────────────────────────────── */}
-        <div style={{ position: "relative", overflow: "hidden" }}>
+        <div className="relative overflow-hidden">
           {candidate.photo ? (
             <img
               src={candidate.photo}
               alt={candidate.name}
-              style={{
-                width: "100%",
-                height: "min(65vw, 380px)",
-                objectFit: "cover",
-                objectPosition: "top",
-                display: "block",
-              }}
+              className="w-full h-[min(75vw,450px)] object-cover object-top block"
             />
           ) : (
-            <div
-              style={{
-                width: "100%",
-                height: "min(65vw, 320px)",
-                background: "linear-gradient(135deg,#1a0a02,#0d0603)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Crown size={56} style={{ color: "rgba(245,158,11,0.4)" }} />
+            <div className="w-full h-[min(65vw,320px)] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+              <Crown size={56} className="text-gold-400/40" />
             </div>
           )}
-          {/* Gradient overlay */}
-          <div
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: "60%",
-              background:
-                "linear-gradient(to top, rgba(0,0,0,0.82), transparent)",
-              pointerEvents: "none",
-            }}
-          />
-          {/* Candidate badge */}
-          <div
-            style={{
-              position: "absolute",
-              top: 14,
-              left: 14,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "5px 12px",
-              background: "rgba(245,158,11,0.92)",
-              backdropFilter: "blur(4px)",
-              borderRadius: 999,
-              fontSize: 12,
-              fontWeight: 700,
-              color: "#fff",
-            }}
-          >
+          <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+
+          <div className="absolute top-3.5 left-3.5 inline-flex items-center gap-1.5 px-3 py-1.5 bg-gold-500/90 backdrop-blur-sm rounded-full text-xs font-bold text-white">
             <Hash size={11} /> {candidateCode}
           </div>
-          {/* Name overlay */}
-          <div
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              padding: "20px 18px 18px",
-            }}
-          >
-            <h1
-              style={{
-                fontSize: "clamp(1.3rem, 5vw, 1.7rem)",
-                fontWeight: 800,
-                color: "#fff",
-                margin: "0 0 4px",
-                lineHeight: 1.2,
-              }}
-            >
+
+          <div className="absolute bottom-0 inset-x-0 p-5">
+            <h1 className="font-body text-2xl sm:text-3xl font-extrabold text-white leading-tight mb-1">
               {candidate.name}
             </h1>
             {candidate.department && (
-              <p
-                style={{
-                  fontSize: 13,
-                  color: "rgba(255,255,255,0.7)",
-                  margin: 0,
-                }}
-              >
+              <p className="text-[13px] text-white/70">
                 {candidate.department}
               </p>
             )}
@@ -340,14 +226,7 @@ export default function CandidatePage() {
         </div>
 
         {/* ── Stats row ─────────────────────────────────────────────────── */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            background: "#fff",
-            borderBottom: "1px solid #f3f4f6",
-          }}
-        >
+        <div className="grid grid-cols-2 bg-white border-b border-gray-100">
           {[
             {
               label: "Category",
@@ -355,50 +234,23 @@ export default function CandidatePage() {
                 event.category?.split(" ").slice(0, 2).join(" ") || "Award",
             },
             { label: "Per vote", value: formatNaira(event.pricePerVote) },
-          ].map(({ label, value }) => (
+          ].map(({ label, value }, i) => (
             <div
               key={label}
-              style={{
-                padding: "14px 10px",
-                textAlign: "center",
-                borderRight: "1px solid #f3f4f6",
-              }}
+              className={`py-3.5 px-2.5 text-center ${i === 0 ? "border-r border-gray-100" : ""}`}
             >
-              <p
-                style={{
-                  fontSize: 15,
-                  fontWeight: 800,
-                  color: "#111827",
-                  margin: "0 0 2px",
-                  lineHeight: 1,
-                }}
-              >
+              <p className="text-[15px] font-extrabold text-gray-900 leading-none mb-0.5">
                 {value}
               </p>
-              <p style={{ fontSize: 11, color: "#9ca3af", margin: 0 }}>
-                {label}
-              </p>
+              <p className="text-[11px] text-gray-400">{label}</p>
             </div>
           ))}
         </div>
 
         {/* ── Bio ───────────────────────────────────────────────────────── */}
         {candidate.bio && (
-          <div
-            style={{
-              padding: "16px 18px",
-              background: "#fff",
-              borderBottom: "1px solid #f3f4f6",
-            }}
-          >
-            <p
-              style={{
-                fontSize: 14,
-                color: "#374151",
-                lineHeight: 1.65,
-                margin: 0,
-              }}
-            >
+          <div className="px-4.5 py-4 bg-white border-b border-gray-100">
+            <p className="text-sm text-gray-700 leading-relaxed">
               {candidate.bio}
             </p>
           </div>
@@ -406,13 +258,7 @@ export default function CandidatePage() {
 
         {/* ── Countdown ─────────────────────────────────────────────────── */}
         {votingOpen && (
-          <div
-            style={{
-              padding: "16px 18px",
-              background: "#fff",
-              borderBottom: "1px solid #f3f4f6",
-            }}
-          >
+          <div className="px-4.5 py-4 bg-white border-b border-gray-100">
             <CountdownTimer
               targetDate={event.endDate}
               label="Voting closes in"
@@ -422,37 +268,17 @@ export default function CandidatePage() {
 
         {/* ── Voting closed state ───────────────────────────────────────── */}
         {!votingOpen && (
-          <div
-            style={{
-              margin: 16,
-              padding: "28px 20px",
-              background: "#fef2f2",
-              border: "1px solid #fecaca",
-              borderRadius: 16,
-              textAlign: "center",
-            }}
-          >
-            <AlertCircle
-              size={32}
-              style={{ color: "#f87171", margin: "0 auto 10px" }}
-            />
-            <h2
-              style={{
-                fontSize: 17,
-                fontWeight: 700,
-                color: "#991b1b",
-                margin: "0 0 6px",
-              }}
-            >
+          <div className="m-4 p-7 bg-red-50 border border-red-200 rounded-2xl text-center">
+            <AlertCircle size={32} className="text-red-400 mx-auto mb-2.5" />
+            <h2 className="text-[17px] font-bold text-red-800 mb-1.5">
               Voting is closed
             </h2>
-            <p style={{ fontSize: 13, color: "#b91c1c", margin: "0 0 16px" }}>
+            <p className="text-[13px] text-red-600 mb-4">
               This event is no longer accepting votes.
             </p>
             <Link
               to={`/events/${eventId}`}
-              className="btn-secondary"
-              style={{ display: "inline-flex" }}
+              className="btn-secondary inline-flex"
             >
               View results
             </Link>
@@ -461,34 +287,10 @@ export default function CandidatePage() {
 
         {/* ── Vote form ─────────────────────────────────────────────────── */}
         {votingOpen && step === "form" && (
-          <div
-            style={{
-              margin: "12px 14px 0",
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-            }}
-          >
+          <div className="mx-3.5 mt-3 flex flex-col gap-3">
             {/* Name */}
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: 14,
-                border: "1px solid #f3f4f6",
-                padding: "16px 16px 18px",
-              }}
-            >
-              <label
-                style={{
-                  display: "block",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: "#374151",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  marginBottom: 8,
-                }}
-              >
+            <div className="card p-4 pb-4.5">
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">
                 Your full name
               </label>
               <input
@@ -501,25 +303,8 @@ export default function CandidatePage() {
             </div>
 
             {/* Email */}
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: 14,
-                border: "1px solid #f3f4f6",
-                padding: "16px 16px 18px",
-              }}
-            >
-              <label
-                style={{
-                  display: "block",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: "#374151",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  marginBottom: 8,
-                }}
-              >
+            <div className="card p-4 pb-4.5">
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">
                 Email address
               </label>
               <input
@@ -530,60 +315,21 @@ export default function CandidatePage() {
                 className="input-field"
                 autoComplete="email"
               />
-              <p style={{ fontSize: 11, color: "#9ca3af", margin: "6px 0 0" }}>
+              <p className="text-[11px] text-gray-400 mt-1.5">
                 Receipt will be sent here
               </p>
             </div>
 
             {/* Votes */}
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: 14,
-                border: "1px solid #f3f4f6",
-                padding: "16px 16px 18px",
-              }}
-            >
-              <label
-                style={{
-                  display: "block",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: "#374151",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  marginBottom: 12,
-                }}
-              >
+            <div className="card p-4 pb-4.5">
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">
                 Number of votes · {formatNaira(event.pricePerVote)} each
               </label>
 
-              {/* Stepper */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  marginBottom: 14,
-                }}
-              >
+              <div className="flex items-center gap-3 mb-3.5">
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 12,
-                    border: "1.5px solid #e5e7eb",
-                    background: "#f9fafb",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    flexShrink: 0,
-                    fontSize: 20,
-                    color: "#374151",
-                    fontWeight: 700,
-                  }}
+                  className="w-[42px] h-[42px] rounded-xl border-[1.5px] border-gray-200 bg-gray-50 flex items-center justify-center text-gray-700 font-bold flex-shrink-0 hover:bg-gray-100 transition-colors"
                 >
                   <Minus size={18} />
                 </button>
@@ -595,67 +341,26 @@ export default function CandidatePage() {
                   onChange={(e) =>
                     setQuantity(Math.max(1, parseInt(e.target.value) || 1))
                   }
-                  style={{
-                    flex: 1,
-                    textAlign: "center",
-                    fontSize: 24,
-                    fontWeight: 800,
-                    color: "#111827",
-                    border: "1.5px solid #e5e7eb",
-                    borderRadius: 12,
-                    padding: "8px 0",
-                    outline: "none",
-                    background: "#fff",
-                    MozAppearance: "textfield",
-                  }}
+                  className="flex-1 text-center text-2xl font-extrabold text-gray-900 border-[1.5px] border-gray-200 rounded-xl py-2 outline-none bg-white focus:border-gold-400 no-spinner"
                 />
                 <button
                   onClick={() => setQuantity((q) => q + 1)}
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 12,
-                    border: "1.5px solid #e5e7eb",
-                    background: "#f9fafb",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    flexShrink: 0,
-                    fontSize: 20,
-                    color: "#374151",
-                    fontWeight: 700,
-                  }}
+                  className="w-[42px] h-[42px] rounded-xl border-[1.5px] border-gray-200 bg-gray-50 flex items-center justify-center text-gray-700 font-bold flex-shrink-0 hover:bg-gray-100 transition-colors"
                 >
                   <Plus size={18} />
                 </button>
               </div>
 
-              {/* Quick amounts */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: 8,
-                }}
-              >
+              <div className="grid grid-cols-4 gap-2">
                 {QUICK_AMOUNTS.map((n) => (
                   <button
                     key={n}
                     onClick={() => setQuantity(n)}
-                    style={{
-                      padding: "9px 4px",
-                      borderRadius: 10,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      border: "1.5px solid",
-                      textAlign: "center",
-                      transition: "all 0.15s",
-                      background: quantity === n ? "#f59e0b" : "#f9fafb",
-                      color: quantity === n ? "#fff" : "#374151",
-                      borderColor: quantity === n ? "#f59e0b" : "#e5e7eb",
-                    }}
+                    className={`py-2.5 px-1 rounded-xl text-[13px] font-bold text-center border-[1.5px] transition-all ${
+                      quantity === n
+                        ? "bg-gold-500 text-white border-gold-500"
+                        : "bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-300"
+                    }`}
                   >
                     {n}
                   </button>
@@ -664,61 +369,20 @@ export default function CandidatePage() {
             </div>
 
             {/* Total summary */}
-            <div
-              style={{
-                background: "linear-gradient(135deg,#fffbeb,#fef3c7)",
-                border: "1.5px solid #fde68a",
-                borderRadius: 16,
-                padding: "18px 18px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-[1.5px] border-amber-200 rounded-2xl p-[18px]">
+              <div className="flex items-center justify-between">
                 <div>
-                  <p
-                    style={{
-                      fontSize: 12,
-                      color: "#92400e",
-                      margin: "0 0 4px",
-                    }}
-                  >
+                  <p className="text-xs text-amber-800 mb-1">
                     {quantity} vote{quantity !== 1 ? "s" : ""} ×{" "}
                     {formatNaira(event.pricePerVote)}
                   </p>
-                  <p
-                    style={{
-                      fontSize: 26,
-                      fontWeight: 800,
-                      color: "#78350f",
-                      margin: 0,
-                      lineHeight: 1,
-                    }}
-                  >
+                  <p className="text-[26px] font-extrabold text-amber-900 leading-none">
                     {formatNaira(totalAmount)}
                   </p>
                 </div>
-                <div style={{ textAlign: "center" }}>
-                  <Shield
-                    size={22}
-                    style={{
-                      color: "#10b981",
-                      display: "block",
-                      margin: "0 auto 4px",
-                    }}
-                  />
-                  <p
-                    style={{
-                      fontSize: 10,
-                      color: "#6b7280",
-                      margin: 0,
-                      fontWeight: 600,
-                    }}
-                  >
+                <div className="text-center">
+                  <Shield size={22} className="text-emerald-500 mx-auto mb-1" />
+                  <p className="text-[10px] text-gray-500 font-semibold leading-tight">
                     Secured by
                     <br />
                     Paystack
@@ -730,28 +394,13 @@ export default function CandidatePage() {
             {/* Proceed button */}
             <button
               onClick={handleProceed}
-              className="btn-primary"
-              style={{
-                width: "100%",
-                padding: "16px",
-                fontSize: 16,
-                borderRadius: 14,
-                letterSpacing: "0.01em",
-              }}
+              className="btn-primary w-full py-4 text-base rounded-2xl tracking-tight"
             >
-              <Star size={18} style={{ fill: "#fff" }} /> Continue to pay{" "}
+              <Star size={18} className="fill-white" /> Continue to pay{" "}
               {formatNaira(totalAmount)}
             </button>
 
-            <p
-              style={{
-                fontSize: 11,
-                textAlign: "center",
-                color: "#9ca3af",
-                margin: 0,
-                padding: "0 16px",
-              }}
-            >
+            <p className="text-[11px] text-center text-gray-400 px-4">
               By voting you agree to our terms. Votes are final and
               non-refundable.
             </p>
@@ -760,48 +409,17 @@ export default function CandidatePage() {
 
         {/* ── Confirm step ──────────────────────────────────────────────── */}
         {votingOpen && step === "confirm" && (
-          <div
-            style={{
-              margin: "12px 14px 0",
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-            }}
-          >
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: 16,
-                border: "1px solid #f3f4f6",
-                overflow: "hidden",
-              }}
-            >
-              {/* Header */}
-              <div
-                style={{
-                  padding: "16px 18px",
-                  borderBottom: "1px solid #f9fafb",
-                  background: "#fffbeb",
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: "#92400e",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    margin: "0 0 2px",
-                  }}
-                >
+          <div className="mx-3.5 mt-3 flex flex-col gap-3">
+            <div className="card overflow-hidden">
+              <div className="px-4.5 py-4 border-b border-gray-50 bg-amber-50">
+                <p className="text-xs font-bold text-amber-800 uppercase tracking-wide mb-0.5">
                   Confirm your vote
                 </p>
-                <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
+                <p className="text-[13px] text-gray-500">
                   Double-check before paying
                 </p>
               </div>
 
-              {/* Details */}
               {[
                 ["Voting for", candidate.name],
                 ["Candidate #", candidateCode],
@@ -813,28 +431,15 @@ export default function CandidatePage() {
               ].map(([label, value]) => (
                 <div
                   key={label}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    gap: 12,
-                    padding: "12px 18px",
-                    borderBottom: "1px solid #f9fafb",
-                  }}
+                  className="flex justify-between items-start gap-3 px-4.5 py-3 border-b border-gray-50 last:border-b-0"
                 >
-                  <span
-                    style={{ fontSize: 13, color: "#9ca3af", flexShrink: 0 }}
-                  >
+                  <span className="text-[13px] text-gray-400 flex-shrink-0">
                     {label}
                   </span>
                   <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: label === "Amount" ? "#d97706" : "#111827",
-                      textAlign: "right",
-                      wordBreak: "break-word",
-                    }}
+                    className={`text-[13px] font-semibold text-right break-words ${
+                      label === "Amount" ? "text-amber-600" : "text-gray-900"
+                    }`}
                   >
                     {value}
                   </span>
@@ -843,68 +448,34 @@ export default function CandidatePage() {
             </div>
 
             {/* Warning */}
-            <div
-              style={{
-                background: "#fef9c3",
-                border: "1px solid #fef08a",
-                borderRadius: 12,
-                padding: "13px 15px",
-                display: "flex",
-                gap: 10,
-                alignItems: "flex-start",
-              }}
-            >
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex gap-2.5 items-start">
               <AlertCircle
                 size={15}
-                style={{ color: "#ca8a04", flexShrink: 0, marginTop: 1 }}
+                className="text-amber-600 flex-shrink-0 mt-0.5"
               />
-              <p
-                style={{
-                  fontSize: 12,
-                  color: "#713f12",
-                  margin: 0,
-                  lineHeight: 1.5,
-                }}
-              >
+              <p className="text-xs text-amber-900 leading-relaxed">
                 <strong>Votes are final.</strong> Refunds and reversals are not
                 allowed once your payment is confirmed.
               </p>
             </div>
 
             {/* Buttons */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 2fr",
-                gap: 10,
-              }}
-            >
+            <div className="grid grid-cols-[1fr_2fr] gap-2.5">
               <button
                 onClick={() => setStep("form")}
-                className="btn-secondary"
-                style={{ borderRadius: 14, padding: "15px 0" }}
+                className="btn-secondary rounded-2xl py-[15px]"
                 disabled={processing}
               >
                 Go back
               </button>
               <button
                 onClick={handleVote}
-                className="btn-primary"
-                style={{ borderRadius: 14, padding: "15px 0", fontSize: 15 }}
+                className="btn-primary rounded-2xl py-[15px] text-[15px]"
                 disabled={processing}
               >
                 {processing ? (
                   <>
-                    <div
-                      style={{
-                        width: 16,
-                        height: 16,
-                        border: "2px solid rgba(255,255,255,0.3)",
-                        borderTopColor: "#fff",
-                        borderRadius: "50%",
-                        animation: "spin 0.7s linear infinite",
-                      }}
-                    />{" "}
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />{" "}
                     Verifying…
                   </>
                 ) : (
@@ -918,77 +489,28 @@ export default function CandidatePage() {
         )}
 
         {/* ── Share link ────────────────────────────────────────────────── */}
-        <div
-          style={{
-            margin: "16px 14px 0",
-            background: "#fff",
-            borderRadius: 14,
-            border: "1px solid #f3f4f6",
-            padding: "16px 16px 18px",
-          }}
-        >
-          <p
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: "#374151",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              margin: "0 0 8px",
-            }}
-          >
+        <div className="card p-4 pb-4.5 mx-3.5 mt-4">
+          <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">
             Share {candidate.name.split(" ")[0]}'s link
           </p>
-          <p style={{ fontSize: 12, color: "#9ca3af", margin: "0 0 12px" }}>
+          <p className="text-xs text-gray-400 mb-3">
             Send this to friends so they can also vote for{" "}
             {candidate.name.split(" ")[0]}.
           </p>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              background: "#f9fafb",
-              border: "1px solid #e5e7eb",
-              borderRadius: 10,
-              padding: "9px 12px",
-              marginBottom: 10,
-              overflow: "hidden",
-            }}
-          >
-            <Link2 size={13} style={{ color: "#9ca3af", flexShrink: 0 }} />
-            <span
-              style={{
-                fontSize: 12,
-                color: "#6b7280",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                flex: 1,
-              }}
-            >
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 mb-2.5 overflow-hidden">
+            <Link2 size={13} className="text-gray-400 flex-shrink-0" />
+            <span className="text-xs text-gray-500 truncate flex-1">
               {candidateUrl}
             </span>
           </div>
-          <div
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}
-          >
+          <div className="grid grid-cols-2 gap-2">
             <button
               onClick={handleCopyLink}
-              className="btn-secondary"
-              style={{
-                borderRadius: 10,
-                padding: "11px 0",
-                fontSize: 13,
-                justifyContent: "center",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
+              className="btn-secondary rounded-lg py-2.5 text-[13px] justify-center flex items-center gap-1.5"
             >
               {copied ? (
                 <>
-                  <Check size={14} style={{ color: "#10b981" }} /> Copied!
+                  <Check size={14} className="text-emerald-500" /> Copied!
                 </>
               ) : (
                 <>
@@ -998,16 +520,7 @@ export default function CandidatePage() {
             </button>
             <button
               onClick={handleShare}
-              className="btn-primary"
-              style={{
-                borderRadius: 10,
-                padding: "11px 0",
-                fontSize: 13,
-                justifyContent: "center",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
+              className="btn-primary rounded-lg py-2.5 text-[13px] justify-center flex items-center gap-1.5"
             >
               <Share2 size={13} /> Share
             </button>
@@ -1017,65 +530,30 @@ export default function CandidatePage() {
 
       {/* ── Fixed bottom CTA (mobile only, form step) ─────────────────── */}
       {votingOpen && step === "form" && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            padding: "12px 14px 20px",
-            background: "rgba(249,250,251,0.96)",
-            backdropFilter: "blur(8px)",
-            borderTop: "1px solid #e5e7eb",
-            zIndex: 40,
-          }}
-        >
-          <div
-            style={{
-              maxWidth: 680,
-              margin: "0 auto",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 11, color: "#9ca3af", margin: 0 }}>
+        <div className="fixed bottom-0 inset-x-0 z-40 px-3.5 pb-5 pt-3 bg-white/95 backdrop-blur-sm border-t border-gray-200">
+          <div className="max-w-[680px] mx-auto flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] text-gray-400">
                 {quantity} vote{quantity !== 1 ? "s" : ""}
               </p>
-              <p
-                style={{
-                  fontSize: 18,
-                  fontWeight: 800,
-                  color: "#111827",
-                  margin: 0,
-                  lineHeight: 1,
-                }}
-              >
+              <p className="text-lg font-extrabold text-gray-900 leading-none">
                 {formatNaira(totalAmount)}
               </p>
             </div>
             <button
               onClick={handleProceed}
-              className="btn-primary"
-              style={{
-                padding: "13px 24px",
-                fontSize: 14,
-                borderRadius: 12,
-                flexShrink: 0,
-              }}
+              className="btn-primary px-6 py-[13px] text-sm rounded-xl flex-shrink-0"
             >
-              <Star size={15} style={{ fill: "#fff" }} /> Vote now
+              <Star size={15} className="fill-white" /> Vote now
             </button>
           </div>
         </div>
       )}
 
       <style>{`
-        input[type=number]::-webkit-inner-spin-button,
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
-        input[type=number] { -moz-appearance: textfield; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .no-spinner::-webkit-inner-spin-button,
+        .no-spinner::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .no-spinner { -moz-appearance: textfield; }
       `}</style>
     </div>
   );

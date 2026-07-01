@@ -9,6 +9,30 @@ const paystackHeaders = () => ({
   "Content-Type": "application/json",
 });
 
+/**
+ * Marks a vote verified and credits the candidate/event counters.
+ * Idempotent — safe to call from both the browser callback (verifyPayment
+ * below) AND the webhook (webhook.controller.js), whichever arrives
+ * first. The second caller just no-ops. This is the ONLY place in the
+ * codebase that increments totalVotes/totalRevenue — a vote is never
+ * counted anywhere else, by design.
+ */
+export async function creditVerifiedVote(vote) {
+  if (vote.status === "verified") return vote; // already credited, do nothing
+
+  vote.status = "verified";
+  await vote.save();
+
+  await Candidate.findByIdAndUpdate(vote.candidate, {
+    $inc: { totalVotes: vote.votes, totalRevenue: vote.amount },
+  });
+  await Event.findByIdAndUpdate(vote.event, {
+    $inc: { totalVotes: vote.votes, totalRevenue: vote.amount },
+  });
+
+  return vote;
+}
+
 // POST /api/votes/initialize
 export async function initializePayment(req, res) {
   const { email, name, candidateId, eventId, quantity, reference } = req.body;
@@ -53,7 +77,14 @@ export async function initializePayment(req, res) {
   res.json({ message: "Payment initialized.", amount: totalAmount, reference });
 }
 
-// POST /api/votes/verify/:reference
+/**
+ * POST /api/votes/verify/:reference
+ * Fires from your usePaystack onSuccess handler right after the inline
+ * popup closes. Gives the voter instant feedback — but it's a courtesy
+ * confirmation, not the only thing that can credit a vote. If this
+ * request never arrives (closed tab, dropped connection, popup killed
+ * by the OS), the webhook still credits it independently.
+ */
 export async function verifyPayment(req, res) {
   const { reference } = req.params;
   const vote = await Vote.findOne({ reference });
@@ -68,47 +99,46 @@ export async function verifyPayment(req, res) {
   try {
     const response = await axios.get(
       `${PAYSTACK_BASE}/transaction/verify/${reference}`,
-      { headers: paystackHeaders() },
+      { headers: paystackHeaders(), timeout: 10000 },
     );
     paystackData = response.data;
   } catch (err) {
-    vote.status = "failed";
-    await vote.save();
-    return res
-      .status(502)
-      .json({ message: "Could not reach Paystack to verify payment." });
+    // Could not REACH Paystack — this tells us nothing about whether the
+    // charge succeeded. Do NOT mark failed here; leave it pending. The
+    // webhook (or a manual re-check) will resolve it once Paystack is
+    // reachable again. Marking failed on a network blip is how you end
+    // up with a real, paid vote sitting in your DB as "failed" forever.
+    return res.status(502).json({
+      message:
+        "Could not reach Paystack to verify payment. Your vote will still be confirmed automatically once payment clears — check back shortly.",
+    });
   }
 
   if (!paystackData.status || paystackData.data?.status !== "success") {
+    // Paystack explicitly told us this charge did not succeed — safe to fail it.
     vote.status = "failed";
     await vote.save();
     return res.status(400).json({ message: "Payment was not successful." });
   }
 
   if (paystackData.data.amount !== vote.amount) {
+    // Amount tampering or a client/price mismatch — never trust the
+    // client's claimed amount, only what Paystack confirms was charged.
     vote.status = "failed";
     await vote.save();
+    console.error(
+      `Amount mismatch on ${reference}: expected ${vote.amount}, got ${paystackData.data.amount}`,
+    );
     return res
       .status(400)
       .json({ message: "Payment amount mismatch. Contact support." });
   }
 
-  vote.status = "verified";
-  await vote.save();
-
-  // This is the single source of truth the poll reads from — accurate
-  // the moment a payment clears, no separate aggregation step needed.
-  await Candidate.findByIdAndUpdate(vote.candidate, {
-    $inc: { totalVotes: vote.votes, totalRevenue: vote.amount },
-  });
-  await Event.findByIdAndUpdate(vote.event, {
-    $inc: { totalVotes: vote.votes, totalRevenue: vote.amount },
-  });
-
+  await creditVerifiedVote(vote);
   res.json({ message: "Vote recorded successfully.", vote });
 }
 
-// GET /api/votes
+// GET /api/votes  (admin only — includes voter PII, kept out of the general staff scope)
 export async function getVotes(req, res) {
   const filter = { status: "verified" };
   if (req.query.eventId) filter.event = req.query.eventId;
