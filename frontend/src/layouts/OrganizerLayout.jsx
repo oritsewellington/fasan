@@ -22,7 +22,8 @@ export default function OrganizerLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row w-full overflow-x-hidden">
+      {/* Sidebar - Desktop Only */}
       <aside className="hidden lg:flex flex-col w-64 bg-gray-950 text-gray-300 fixed h-screen">
         <div className="flex items-center gap-2.5 px-6 h-16 border-b border-gray-800">
           <div className="w-8 h-8 bg-gradient-to-br from-gold-400 to-gold-600 rounded-lg flex items-center justify-center">
@@ -35,6 +36,7 @@ export default function OrganizerLayout() {
             <p className="text-gold-400 text-2xs mt-0.5">FASA 2026</p>
           </div>
         </div>
+
         <nav className="flex-1 px-3 py-6 space-y-1">
           {links.map(({ to, label, icon: Icon, end }) => (
             <NavLink
@@ -53,6 +55,7 @@ export default function OrganizerLayout() {
             </NavLink>
           ))}
         </nav>
+
         <div className="p-3 border-t border-gray-800">
           <div className="px-3 py-2 mb-2">
             <p className="text-xs text-gray-500">Logged in as</p>
@@ -69,6 +72,7 @@ export default function OrganizerLayout() {
         </div>
       </aside>
 
+      {/* Bottom Navigation - Mobile Only */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-gray-950 border-t border-gray-800 flex justify-around py-2">
         {links.map(({ to, label, icon: Icon, end }) => (
           <NavLink
@@ -76,7 +80,9 @@ export default function OrganizerLayout() {
             to={to}
             end={end}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-2xs font-medium ${isActive ? "text-gold-400" : "text-gray-500"}`
+              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-2xs font-medium ${
+                isActive ? "text-gold-400" : "text-gray-500"
+              }`
             }
           >
             <Icon size={18} /> {label}
@@ -84,7 +90,8 @@ export default function OrganizerLayout() {
         ))}
       </nav>
 
-      <main className="flex-1 lg:ml-64 pb-20 lg:pb-0">
+      {/* Main Content Area */}
+      <main className="flex-1 w-full min-w-0 lg:ml-64 pb-20 lg:pb-0">
         <Outlet />
       </main>
     </div>

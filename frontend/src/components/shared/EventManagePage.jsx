@@ -186,7 +186,7 @@ export default function EventManagePage({ basePath = "/organizer" }) {
                   </div>
                   <p className="text-xs text-gray-400">
                     {c.department}
-                    {c.level ? ` Â· ${c.level}` : ""}
+                    {c.level ? `${c.level}` : ""}
                   </p>
                   <div className="mt-1.5 max-w-xs">
                     <ProgressBar
