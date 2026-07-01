@@ -34,6 +34,7 @@ import {
 } from "../../utils/helpers.js";
 import CandidateFormModal from "./CandidateFormModal.jsx";
 
+const BASE_API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 export default function EventManagePage({ basePath = "/organizer" }) {
   const { eventId } = useParams();
   const [showForm, setShowForm] = useState(false);
@@ -167,7 +168,7 @@ export default function EventManagePage({ basePath = "/organizer" }) {
                 </span>
                 {c.photo ? (
                   <img
-                    src={c.photo}
+                    src={`${BASE_API_URL}${c.photo}`}
                     alt={c.name}
                     className="w-12 h-12 rounded-xl object-cover object-top flex-shrink-0"
                   />

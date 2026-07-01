@@ -31,6 +31,7 @@ import { PageLoader, CountdownTimer } from "../../components/ui/index.jsx";
 
 const QUICK_AMOUNTS = [5, 10, 20, 50];
 
+const BASE_API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 export default function CandidatePage() {
   const { eventId, candidateId } = useParams();
   const navigate = useNavigate();
@@ -247,7 +248,7 @@ export default function CandidatePage() {
         <div style={{ position: "relative", overflow: "hidden" }}>
           {candidate.photo ? (
             <img
-              src={candidate.photo}
+              src={`${BASE_API_URL}${candidate.photo}`}
               alt={candidate.name}
               style={{
                 width: "100%",

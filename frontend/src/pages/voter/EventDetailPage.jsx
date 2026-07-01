@@ -30,7 +30,7 @@ import {
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 const CANDIDATES_PER_PAGE = 12;
-
+const BASE_API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 export default function EventDetailPage() {
   const { eventId } = useParams();
   const { data: event, isLoading: evLoading } = useGetEventQuery(eventId);
@@ -83,7 +83,6 @@ export default function EventDetailPage() {
       block: "start",
     });
   };
-
   return (
     <div
       style={{
@@ -97,7 +96,7 @@ export default function EventDetailPage() {
         {/* Banner image — full width, collapses gracefully */}
         {event.bannerImage && (
           <img
-            src={event.bannerImage}
+            src={`${BASE_API_URL}${event.bannerImage}`}
             alt={event.title}
             style={{
               width: "100%",
@@ -626,7 +625,7 @@ function CandidateCard({
         {showPhoto ? (
           <img
             data-photo-zoom
-            src={candidate.photo}
+            src={`${BASE_API_URL}${candidate.photo}`}
             alt={candidate.name}
             loading="lazy"
             decoding="async"

@@ -26,7 +26,7 @@ export async function getCandidate(req, res) {
   res.json(candidate);
 }
 
-// POST /api/events/:eventId/candidates  (any admin or staff)
+// POST /api/events/:eventId/candidates
 export async function createCandidate(req, res) {
   const { name, bio, department, level } = req.body;
   if (!name?.trim())
@@ -46,8 +46,11 @@ export async function createCandidate(req, res) {
     const inputPath = req.file.path;
     const outputName = req.file.filename.replace(/\.[^.]+$/, ".webp");
     const outputPath = path.join(path.dirname(inputPath), outputName);
+
     await resizeAndConvert(inputPath, outputPath, 600, 750, "cover");
-    photo = buildUrl(req, "candidates", outputName);
+
+    // FIXED: Removed 'req'. Saves as "/uploads/candidates/uuid.webp"
+    photo = buildUrl("candidates", outputName);
     photoFilename = outputName;
   }
 
@@ -66,7 +69,7 @@ export async function createCandidate(req, res) {
   res.status(201).json(candidate);
 }
 
-// PUT /api/events/:eventId/candidates/:candidateId  (any admin or staff)
+// PUT /api/events/:eventId/candidates/:candidateId
 export async function updateCandidate(req, res) {
   const candidate = await Candidate.findOne({
     _id: req.params.candidateId,
@@ -85,8 +88,11 @@ export async function updateCandidate(req, res) {
     const inputPath = req.file.path;
     const outputName = req.file.filename.replace(/\.[^.]+$/, ".webp");
     const outputPath = path.join(path.dirname(inputPath), outputName);
+
     await resizeAndConvert(inputPath, outputPath, 600, 750, "cover");
-    candidate.photo = buildUrl(req, "candidates", outputName);
+
+    // FIXED: Removed 'req'
+    candidate.photo = buildUrl("candidates", outputName);
     candidate.photoFilename = outputName;
   }
 
@@ -94,7 +100,7 @@ export async function updateCandidate(req, res) {
   res.json(candidate);
 }
 
-// DELETE /api/events/:eventId/candidates/:candidateId  (any admin or staff)
+// DELETE /api/events/:eventId/candidates/:candidateId
 export async function deleteCandidate(req, res) {
   const candidate = await Candidate.findOne({
     _id: req.params.candidateId,
