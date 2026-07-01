@@ -1,15 +1,6 @@
 import Event from "../models/Event.model.js";
 import Candidate from "../models/Candidate.model.js";
 
-/**
- * Ranks candidates by votes, assigns TIED ranks (1, 2, 2, 4 ...), and
- * computes:
- *  - shareOfTotal:  this candidate's votes as a % of all votes cast
- *                    in the event (factual "share of the field")
- *  - shareOfLeader: this candidate's votes relative to the leader's
- *                    votes (drives bar length — leader is always 100%,
- *                    everyone else shows how far behind they are)
- */
 function rankCandidates(candidates) {
   const sorted = [...candidates].sort((a, b) => b.votes - a.votes);
   const totalVotes = sorted.reduce((s, c) => s + c.votes, 0) || 1;
@@ -33,8 +24,6 @@ function rankCandidates(candidates) {
   });
 }
 
-// GET /api/polls/:eventId
-// Full live standings for one event's candidates.
 export async function getEventPoll(req, res) {
   const { eventId } = req.params;
 
@@ -50,7 +39,7 @@ export async function getEventPoll(req, res) {
     name: c.name,
     photo: c.photo || "",
     candidateCode: c.candidateCode,
-    votes: c.totalVotes || 0, // already accurate — incremented on every verified payment
+    votes: c.totalVotes || 0,
   }));
 
   const ranked = rankCandidates(withVotes);
@@ -65,9 +54,6 @@ export async function getEventPoll(req, res) {
   });
 }
 
-// GET /api/polls
-// Lightweight summary across every event — powers the /polls index page.
-// No per-candidate breakdown here, just the current leader.
 export async function getAllPolls(req, res) {
   const events = await Event.find().sort("category title").lean();
 

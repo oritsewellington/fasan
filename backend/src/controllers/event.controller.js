@@ -1,11 +1,9 @@
-import path from "path";
 import Event from "../models/Event.model.js";
 import Candidate from "../models/Candidate.model.js";
 import Category from "../models/Category.model.js";
 import {
-  buildUrl,
-  deleteFile,
-  resizeAndConvert,
+  uploadToCloudinary,
+  deleteFromCloudinary,
 } from "../middleware/upload.middleware.js";
 
 // GET /api/events
@@ -55,14 +53,15 @@ export async function createEvent(req, res) {
   }
 
   let bannerImage = "",
-    bannerFilename = "";
+    bannerPublicId = "";
   if (req.file) {
-    const inputPath = req.file.path;
-    const outputName = req.file.filename.replace(/\.[^.]+$/, ".webp");
-    const outputPath = path.join(path.dirname(inputPath), outputName);
-    await resizeAndConvert(inputPath, outputPath, 1200, 630, "cover");
-    bannerImage = buildUrl(req, "banners", outputName);
-    bannerFilename = outputName;
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: "fasa/banners",
+      width: 1200,
+      height: 630,
+    });
+    bannerImage = result.url;
+    bannerPublicId = result.publicId;
   }
 
   const event = await Event.create({
@@ -73,7 +72,7 @@ export async function createEvent(req, res) {
     endDate,
     pricePerVote: parseInt(pricePerVote),
     bannerImage,
-    bannerFilename,
+    bannerPublicId,
     category: category?.name || "",
     categoryId: category?._id || null,
     createdBy: req.user._id, // audit trail only — not used for permissions
@@ -115,13 +114,15 @@ export async function updateEvent(req, res) {
   }
 
   if (req.file) {
-    if (event.bannerFilename) deleteFile(event.bannerImage);
-    const inputPath = req.file.path;
-    const outputName = req.file.filename.replace(/\.[^.]+$/, ".webp");
-    const outputPath = path.join(path.dirname(inputPath), outputName);
-    await resizeAndConvert(inputPath, outputPath, 1200, 630, "cover");
-    event.bannerImage = buildUrl(req, "banners", outputName);
-    event.bannerFilename = outputName;
+    if (event.bannerPublicId) await deleteFromCloudinary(event.bannerPublicId);
+
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: "fasa/banners",
+      width: 1200,
+      height: 630,
+    });
+    event.bannerImage = result.url;
+    event.bannerPublicId = result.publicId;
   }
 
   await event.save();
@@ -133,7 +134,7 @@ export async function deleteEvent(req, res) {
   const event = await Event.findById(req.params.id);
   if (!event) return res.status(404).json({ message: "Event not found." });
 
-  deleteFile(event.bannerImage);
+  await deleteFromCloudinary(event.bannerPublicId);
   await Candidate.deleteMany({ event: event._id });
   await event.deleteOne();
   res.json({ message: "Event deleted." });

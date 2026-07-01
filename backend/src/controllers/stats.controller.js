@@ -3,10 +3,6 @@ import Candidate from "../models/Candidate.model.js";
 import Vote from "../models/Vote.model.js";
 import User from "../models/User.model.js";
 
-// Flat platform commission — you (admin) keep this share of every vote,
-// the rest belongs to the school body running the event. This is a
-// single global rate now, not a per-organizer split, so it lives in
-// config rather than on individual records.
 const PLATFORM_COMMISSION = parseFloat(process.env.PLATFORM_COMMISSION) || 0.1;
 
 // GET /api/stats/admin
@@ -37,10 +33,14 @@ export async function getAdminStats(req, res) {
   });
 }
 
-// GET /api/stats/staff  (any admin or staff — activity only, no revenue)
 export async function getStaffStats(req, res) {
   const events = await Event.find();
   const now = new Date();
+
+  // Calculate values so we can pass them down to the staff payload
+  const totalRevenue = events.reduce((s, e) => s + (e.totalRevenue || 0), 0);
+  const platformEarnings = Math.round(totalRevenue * PLATFORM_COMMISSION);
+  const schoolPayable = totalRevenue - platformEarnings;
 
   res.json({
     totalVotes: events.reduce((s, e) => s + (e.totalVotes || 0), 0),
@@ -48,6 +48,10 @@ export async function getStaffStats(req, res) {
     activeEvents: events.filter(
       (e) => e.isOpen && now >= e.startDate && now <= e.endDate,
     ).length,
+    totalRevenue,
+    platformEarnings,
+    schoolPayable,
+    platformCommission: PLATFORM_COMMISSION,
   });
 }
 

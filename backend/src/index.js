@@ -1,8 +1,8 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
-import dotenv from "dotenv";
 import path from "path";
 import rateLimit from "express-rate-limit";
 import { connectDB } from "./utils/db.js";
@@ -14,8 +14,6 @@ import voteRoutes from "./routes/vote.routes.js";
 import statsRoutes from "./routes/stats.routes.js";
 import categoriesRoutes from "./routes/category.routes.js";
 import pollRoutes from "./routes/poll.routes.js"; // NEW
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -29,9 +27,6 @@ app.use(
 );
 app.use(morgan("dev"));
 app.use(express.json({ limit: "10mb" }));
-
-const uploadsDir = path.join(process.cwd(), "uploads");
-app.use("/uploads", express.static(uploadsDir));
 
 app.use("/api", rateLimit({ windowMs: 15 * 60 * 1000, max: 300 }));
 app.use(

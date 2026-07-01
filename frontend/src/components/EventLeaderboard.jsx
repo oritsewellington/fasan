@@ -2,22 +2,6 @@ import { Crown, Users, Clock, ChevronRight, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useGetEventPollQuery } from "../store/api/polls.Api";
 
-/**
- * EventLeaderboard
- * -----------------------------------------------------------------------
- * Live standings for one event's candidates. Every number — votes, rank,
- * percentages — comes from GET /api/polls/:eventId, which itself reads
- * straight off Candidate.totalVotes / Event.totalVotes: counters that
- * are only ever incremented inside verifyPayment() after Paystack
- * confirms the transaction. So this is already "confirmed votes only",
- * no separate filtering needed here.
- *
- * - Bar length = shareOfLeader (relative to whoever's winning right now,
- *   leader is always 100%).
- * - The % label = shareOfTotal (share of all votes cast in this event).
- * - Polls the backend every 20s so standings feel live without websockets.
- */
-
 const RANK_STYLES = {
   1: {
     bar: "bg-gradient-to-r from-gold-400 to-gold-500",
@@ -64,11 +48,18 @@ function initials(name = "") {
     .toUpperCase();
 }
 
+// FIXED: Formats counts over 100 into rounded thresholds (e.g., 100+, 1,200+)
+function formatTotalVotes(count) {
+  if (!count || count < 100) return `${count || 0}`;
+  const rounded = Math.floor(count / 100) * 100;
+  return `${rounded.toLocaleString()}+`;
+}
+
 export default function EventLeaderboard({ eventId, compact = false }) {
   const { data, isLoading, isFetching, isError, refetch } =
     useGetEventPollQuery(eventId, {
       skip: !eventId,
-      pollingInterval: 20000, // "live" without a websocket
+      pollingInterval: 20000,
       refetchOnMountOrArgChange: true,
     });
 
@@ -183,10 +174,6 @@ export default function EventLeaderboard({ eventId, compact = false }) {
                   }}
                 />
               </div>
-
-              <div className="mt-1 text-[11px] text-gray-500 tabular-nums">
-                {c.votes.toLocaleString()} vote{c.votes === 1 ? "" : "s"}
-              </div>
             </div>
           );
         })}
@@ -196,7 +183,8 @@ export default function EventLeaderboard({ eventId, compact = false }) {
       <div className="px-6 py-4 bg-gray-950/60 border-t border-gray-800 flex items-center justify-between text-xs text-gray-500">
         <div className="flex items-center gap-1.5">
           <Users size={13} />
-          {data.totalVotes.toLocaleString()} total votes
+          {/* FIXED: Uses the custom visibility rules function here */}
+          {formatTotalVotes(data.totalVotes)} total votes
         </div>
         <div className="flex items-center gap-1.5">
           <Clock size={13} />

@@ -1,13 +1,10 @@
-import path from "path";
 import Candidate from "../models/Candidate.model.js";
 import Event from "../models/Event.model.js";
 import {
-  buildUrl,
-  deleteFile,
-  resizeAndConvert,
+  uploadToCloudinary,
+  deleteFromCloudinary,
 } from "../middleware/upload.middleware.js";
 
-// GET /api/events/:eventId/candidates
 export async function getCandidates(req, res) {
   const candidates = await Candidate.find({ event: req.params.eventId }).sort(
     "candidateNumber",
@@ -15,7 +12,6 @@ export async function getCandidates(req, res) {
   res.json(candidates);
 }
 
-// GET /api/events/:eventId/candidates/:candidateId
 export async function getCandidate(req, res) {
   const candidate = await Candidate.findOne({
     _id: req.params.candidateId,
@@ -26,7 +22,6 @@ export async function getCandidate(req, res) {
   res.json(candidate);
 }
 
-// POST /api/events/:eventId/candidates
 export async function createCandidate(req, res) {
   const { name, bio, department, level } = req.body;
   if (!name?.trim())
@@ -41,17 +36,15 @@ export async function createCandidate(req, res) {
   const num = lastCandidate ? lastCandidate.candidateNumber + 1 : 1;
 
   let photo = "",
-    photoFilename = "";
+    photoPublicId = "";
   if (req.file) {
-    const inputPath = req.file.path;
-    const outputName = req.file.filename.replace(/\.[^.]+$/, ".webp");
-    const outputPath = path.join(path.dirname(inputPath), outputName);
-
-    await resizeAndConvert(inputPath, outputPath, 600, 750, "cover");
-
-    // FIXED: Removed 'req'. Saves as "/uploads/candidates/uuid.webp"
-    photo = buildUrl("candidates", outputName);
-    photoFilename = outputName;
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: "fasa/candidates",
+      width: 600,
+      height: 750,
+    });
+    photo = result.url;
+    photoPublicId = result.publicId;
   }
 
   const candidate = await Candidate.create({
@@ -60,7 +53,7 @@ export async function createCandidate(req, res) {
     department: department?.trim() || "",
     level: level?.trim() || "",
     photo,
-    photoFilename,
+    photoPublicId,
     candidateNumber: num,
     candidateCode: "FASA-" + String(num).padStart(4, "0"),
     event: event._id,
@@ -69,7 +62,6 @@ export async function createCandidate(req, res) {
   res.status(201).json(candidate);
 }
 
-// PUT /api/events/:eventId/candidates/:candidateId
 export async function updateCandidate(req, res) {
   const candidate = await Candidate.findOne({
     _id: req.params.candidateId,
@@ -84,23 +76,23 @@ export async function updateCandidate(req, res) {
   if (req.body.level) candidate.level = req.body.level.trim();
 
   if (req.file) {
-    if (candidate.photoFilename) deleteFile(candidate.photo);
-    const inputPath = req.file.path;
-    const outputName = req.file.filename.replace(/\.[^.]+$/, ".webp");
-    const outputPath = path.join(path.dirname(inputPath), outputName);
+    // delete old image first (best-effort, don't block on failure)
+    if (candidate.photoPublicId)
+      await deleteFromCloudinary(candidate.photoPublicId);
 
-    await resizeAndConvert(inputPath, outputPath, 600, 750, "cover");
-
-    // FIXED: Removed 'req'
-    candidate.photo = buildUrl("candidates", outputName);
-    candidate.photoFilename = outputName;
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: "fasa/candidates",
+      width: 600,
+      height: 750,
+    });
+    candidate.photo = result.url;
+    candidate.photoPublicId = result.publicId;
   }
 
   await candidate.save();
   res.json(candidate);
 }
 
-// DELETE /api/events/:eventId/candidates/:candidateId
 export async function deleteCandidate(req, res) {
   const candidate = await Candidate.findOne({
     _id: req.params.candidateId,
@@ -109,7 +101,7 @@ export async function deleteCandidate(req, res) {
   if (!candidate)
     return res.status(404).json({ message: "Candidate not found." });
 
-  deleteFile(candidate.photo);
+  await deleteFromCloudinary(candidate.photoPublicId);
   await candidate.deleteOne();
   res.json({ message: "Candidate removed." });
 }

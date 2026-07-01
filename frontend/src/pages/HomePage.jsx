@@ -639,9 +639,9 @@ function EventCard({ event }) {
         <p className="text-xs text-gray-500 mb-3">{event.organization}</p>
         <CountdownTimer targetDate={event.endDate} />
         <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-gray-50">
-          <span className="text-gray-400">
+          {/* <span className="text-gray-400">
             {formatNumber(event.totalVotes || 0)} votes
-          </span>
+          </span> */}
           <span className="font-semibold text-gold-600 flex items-center gap-1 group-hover:gap-2 transition-all">
             Vote now <ArrowRight size={12} />
           </span>

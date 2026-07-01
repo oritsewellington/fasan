@@ -30,7 +30,7 @@ import {
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 const CANDIDATES_PER_PAGE = 12;
-const BASE_API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 export default function EventDetailPage() {
   const { eventId } = useParams();
   const { data: event, isLoading: evLoading } = useGetEventQuery(eventId);
@@ -96,7 +96,7 @@ export default function EventDetailPage() {
         {/* Banner image — full width, collapses gracefully */}
         {event.bannerImage && (
           <img
-            src={`${BASE_API_URL}${event.bannerImage}`}
+            src={event.bannerImage}
             alt={event.title}
             style={{
               width: "100%",
@@ -625,7 +625,7 @@ function CandidateCard({
         {showPhoto ? (
           <img
             data-photo-zoom
-            src={`${BASE_API_URL}${candidate.photo}`}
+            src={candidate.photo}
             alt={candidate.name}
             loading="lazy"
             decoding="async"
@@ -783,9 +783,9 @@ function CandidateCard({
             marginBottom: 7,
           }}
         >
-          <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 500 }}>
+          {/* <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 500 }}>
             {(candidate.totalVotes || 0).toLocaleString()} votes
-          </span>
+          </span> */}
           <span style={{ fontSize: 12, fontWeight: 700, color: "#d97706" }}>
             {sharePct}%
           </span>

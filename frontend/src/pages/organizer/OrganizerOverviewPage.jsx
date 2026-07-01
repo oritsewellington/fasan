@@ -1,5 +1,12 @@
 ﻿import { Link } from "react-router-dom";
-import { Calendar, Vote, ArrowRight, Trophy } from "lucide-react";
+import {
+  Calendar,
+  Vote,
+  ArrowRight,
+  Trophy,
+  DollarSign,
+  TrendingUp,
+} from "lucide-react";
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../../store/slices/authSlice.js";
 import { useGetStaffStatsQuery } from "../../store/api/statsApi.js";
@@ -11,15 +18,11 @@ import {
 } from "../../components/ui/index.jsx";
 import {
   formatNumber,
+  formatNaira,
   getEventStatus,
   formatShortDate,
 } from "../../utils/helpers.js";
 
-/**
- * Staff no longer own events individually — any staff/admin account can
- * manage anything — so this shows platform-wide activity (not "my"
- * anything) and leaves financial figures to the admin-only dashboard.
- */
 export default function OrganizerOverviewPage() {
   const user = useSelector(selectCurrentUser);
   const { data: stats, isLoading: sLoad } = useGetStaffStatsQuery();
@@ -33,6 +36,7 @@ export default function OrganizerOverviewPage() {
 
   return (
     <div className="page-container py-8 animate-fade-in">
+      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <p className="section-label mb-1">Welcome back</p>
@@ -48,6 +52,31 @@ export default function OrganizerOverviewPage() {
         </Link>
       </div>
 
+      {/* Revenue Transparency Grid (UPDATED to 3 columns on large viewports) */}
+      <p className="section-label mb-3 text-gray-400">Revenue Transparency</p>
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        {/* NEW CARD PLACEMENT */}
+        <StatCard
+          label="Total Revenue"
+          value={formatNaira(stats?.totalRevenue || 0)}
+          icon={DollarSign}
+        />
+        <StatCard
+          label={`Platform Earnings (${((stats?.platformCommission || 0.1) * 100).toFixed(0)}%)`}
+          value={formatNaira(stats?.platformEarnings || 0)}
+          icon={TrendingUp}
+          colorClass="text-gold-600"
+        />
+        <StatCard
+          label="Your Earnings (School Body)"
+          value={formatNaira(stats?.schoolPayable || 0)}
+          icon={DollarSign}
+          colorClass="text-emerald-600"
+        />
+      </div>
+
+      {/* Activity Statistics Grid */}
+      <p className="section-label mb-3 text-gray-400">Activity</p>
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <StatCard
           label="Total Votes"
@@ -67,6 +96,7 @@ export default function OrganizerOverviewPage() {
         />
       </div>
 
+      {/* Recent Events Card List */}
       <div className="card p-6">
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-display font-bold text-gray-900">

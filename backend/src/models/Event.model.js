@@ -6,7 +6,7 @@ const eventSchema = new mongoose.Schema(
     description: { type: String, default: "" },
     organization: { type: String, required: true, trim: true },
     bannerImage: { type: String, default: "" },
-    bannerFilename: { type: String, default: "" },
+    bannerPublicId: { type: String, default: "" },
 
     category: { type: String, default: "" }, // denormalized name, kept for fast display
     categoryId: {

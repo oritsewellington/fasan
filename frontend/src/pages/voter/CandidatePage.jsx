@@ -31,7 +31,6 @@ import { PageLoader, CountdownTimer } from "../../components/ui/index.jsx";
 
 const QUICK_AMOUNTS = [5, 10, 20, 50];
 
-const BASE_API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 export default function CandidatePage() {
   const { eventId, candidateId } = useParams();
   const navigate = useNavigate();
@@ -248,7 +247,7 @@ export default function CandidatePage() {
         <div style={{ position: "relative", overflow: "hidden" }}>
           {candidate.photo ? (
             <img
-              src={`${BASE_API_URL}${candidate.photo}`}
+              src={candidate.photo}
               alt={candidate.name}
               style={{
                 width: "100%",
@@ -344,16 +343,12 @@ export default function CandidatePage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
+            gridTemplateColumns: "1fr 1fr",
             background: "#fff",
             borderBottom: "1px solid #f3f4f6",
           }}
         >
           {[
-            {
-              label: "Votes",
-              value: (candidate.totalVotes || 0).toLocaleString(),
-            },
             {
               label: "Category",
               value:
