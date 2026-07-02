@@ -92,49 +92,27 @@ export default function EventDetailPage() {
       }}
     >
       {/* ── Event header ─────────────────────────────────────────────── */}
-      <div style={{ background: "#fff", borderBottom: "1px solid #f3f4f6" }}>
+      <div className="bg-white border-b border-gray-100">
         {/* Banner image — full width, collapses gracefully */}
         {event.bannerImage && (
           <img
             src={event.bannerImage}
             alt={event.title}
-            style={{
-              width: "100%",
-              height: "min(45vw, 280px)",
-              objectFit: "cover",
-              display: "block",
-            }}
+            className="w-full h-[min(45vw,280px)] object-cover block"
           />
         )}
 
-        <div className="page-container" style={{ padding: "20px 16px 24px" }}>
+        <div className="page-container px-4 pt-5 pb-6">
           {/* Back link */}
           <Link
             to="/events"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 13,
-              color: "#6b7280",
-              textDecoration: "none",
-              marginBottom: 16,
-              fontWeight: 500,
-            }}
+            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-gray-500 hover:text-gray-700 no-underline mb-4"
           >
             <ArrowLeft size={15} /> Back to events
           </Link>
 
           {/* Badges row */}
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 10,
-            }}
-          >
+          <div className="flex flex-wrap items-center gap-2 mb-2.5">
             <EventStatusBadge status={status} />
             {event.category && (
               <span className="badge-gold">{event.category}</span>
@@ -142,107 +120,51 @@ export default function EventDetailPage() {
           </div>
 
           {/* Title */}
-          <h1
-            style={{
-              fontSize: "clamp(1.25rem, 5vw, 2rem)",
-              fontWeight: 800,
-              color: "#111827",
-              margin: "0 0 6px",
-              lineHeight: 1.2,
-            }}
-          >
+          <h1 className="text-[clamp(1.25rem,5vw,2rem)] font-extrabold text-gray-900 leading-tight mb-1.5">
             {event.title}
           </h1>
 
           {event.organization && (
-            <p style={{ fontSize: 13, color: "#9ca3af", margin: "0 0 12px" }}>
+            <p className="text-[13px] text-gray-400 mb-3">
               {event.organization}
             </p>
           )}
 
           {event.description && (
-            <p
-              style={{
-                fontSize: 14,
-                color: "#6b7280",
-                lineHeight: 1.6,
-                margin: "0 0 14px",
-                maxWidth: 560,
-              }}
-            >
+            <p className="text-sm text-gray-600 leading-relaxed mb-3.5 max-w-[560px]">
               {event.description}
             </p>
           )}
 
           {/* Meta row — wraps on small screens */}
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "8px 20px",
-              fontSize: 12,
-              color: "#6b7280",
-              marginBottom: 14,
-            }}
-          >
-            <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <Calendar size={13} style={{ color: "#f59e0b", flexShrink: 0 }} />
+          <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs text-gray-600 font-medium mb-3.5">
+            <span className="flex items-center gap-1.5">
+              <Calendar size={13} className="text-gold-500 flex-shrink-0" />
               Starts: {formatEventDate(event.startDate)}
             </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <Clock size={13} style={{ color: "#f59e0b", flexShrink: 0 }} />
+            <span className="flex items-center gap-1.5">
+              <Clock size={13} className="text-gold-500 flex-shrink-0" />
               Ends: {formatEventDate(event.endDate)}
             </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <Users size={13} style={{ color: "#f59e0b", flexShrink: 0 }} />
-              {totalVotes.toLocaleString()} votes cast
+            <span className="flex items-center gap-1.5 font-semibold text-gray-800">
+              <Users size={13} className="text-gold-500 flex-shrink-0" />
+              {totalVotes > 100 ? "100+" : totalVotes.toLocaleString()} votes
+              cast
             </span>
           </div>
 
           {/* Price + countdown row */}
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "flex-end",
-              justifyContent: "space-between",
-              gap: 14,
-            }}
-          >
-            <div
-              style={{
-                background: "linear-gradient(135deg,#fffbeb,#fef3c7)",
-                border: "1px solid #fde68a",
-                borderRadius: 12,
-                padding: "10px 16px",
-                display: "inline-flex",
-                flexDirection: "column",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 11,
-                  color: "#92400e",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                }}
-              >
+          <div className="flex flex-wrap items-end justify-between gap-3.5">
+            <div className="inline-flex flex-col bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 rounded-xl px-4 py-2.5">
+              <span className="text-[11px] font-semibold text-amber-800 uppercase tracking-wide">
                 Price per vote
               </span>
-              <span
-                style={{
-                  fontSize: 22,
-                  fontWeight: 800,
-                  color: "#78350f",
-                  lineHeight: 1.2,
-                }}
-              >
+              <span className="text-[22px] font-extrabold text-amber-900 leading-tight">
                 ₦{(event.pricePerVote / 100).toLocaleString()}
               </span>
             </div>
             {votingOpen && (
-              <div style={{ flexShrink: 0 }}>
+              <div className="flex-shrink-0">
                 <CountdownTimer targetDate={event.endDate} label="Closes in" />
               </div>
             )}
@@ -314,9 +236,6 @@ export default function EventDetailPage() {
                   Bars show position relative to the leader
                 </p>
               </div>
-              <span style={{ fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
-                {totalVotes.toLocaleString()} total votes
-              </span>
             </div>
 
             {/* Pagination summary */}

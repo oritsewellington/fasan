@@ -87,3 +87,26 @@ export async function getRecentTransactions(req, res) {
     .limit(parseInt(limit));
   res.json(transactions);
 }
+
+export async function getPlatformStats(req, res) {
+  const [uniqueVotersResult] = await Vote.aggregate([
+    { $match: { status: "verified" } },
+    { $group: { _id: "$voterEmail" } },
+    { $count: "count" },
+  ]);
+
+  const [totalsResult] = await Vote.aggregate([
+    { $match: { status: "verified" } },
+    {
+      $group: {
+        _id: null,
+        totalVotes: { $sum: "$votes" },
+      },
+    },
+  ]);
+
+  res.json({
+    uniqueVoters: uniqueVotersResult?.count || 0,
+    totalVotes: totalsResult?.totalVotes || 0,
+  });
+}

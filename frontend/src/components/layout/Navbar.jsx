@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { Crown, Menu, X, LogOut, LayoutDashboard } from "lucide-react";
+import { Crown, Menu, X, LogOut, LayoutDashboard, Trophy } from "lucide-react";
 import {
   selectIsAuth,
   selectUserRole,
@@ -9,6 +9,14 @@ import {
   logout,
 } from "../../store/slices/authSlice.js";
 import { apiSlice } from "../../store/api/apiSlice.js";
+
+const NAV_LINKS = [
+  { to: "/", label: "Home" },
+  { to: "/events", label: "Vote Now" },
+  { to: "/polls", label: "Results" },
+  { to: "/about", label: "About" },
+  { to: "/contact", label: "Contact" },
+];
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -68,26 +76,27 @@ export default function Navbar() {
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-1">
-          {[
-            { to: "/", label: "Home" },
-            { to: "/events", label: "Vote Now" },
-            { to: "/about", label: "About" },
-            { to: "/contact", label: "Contact" },
-          ].map(({ to, label }) => (
-            <Link
-              key={to}
-              to={to}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                location.pathname === to
-                  ? "text-gold-600 bg-gold-50"
-                  : !scrolled && isHome
-                    ? "text-white/80 hover:text-white hover:bg-white/10"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
+          {NAV_LINKS.map(({ to, label }) => {
+            const isResults = to === "/polls";
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  location.pathname === to
+                    ? "text-gold-600 bg-gold-50"
+                    : !scrolled && isHome
+                      ? "text-white/80 hover:text-white hover:bg-white/10"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                }`}
+              >
+                {isResults && (
+                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                )}
+                {label}
+              </Link>
+            );
+          })}
         </div>
 
         {/* Auth buttons */}
@@ -133,20 +142,24 @@ export default function Navbar() {
       {open && (
         <div className="md:hidden bg-white border-t border-gray-100 shadow-lg animate-slide-up">
           <div className="page-container py-4 space-y-1">
-            {[
-              { to: "/", label: "Home" },
-              { to: "/events", label: "Vote Now" },
-              { to: "/about", label: "About" },
-              { to: "/contact", label: "Contact" },
-            ].map(({ to, label }) => (
-              <Link
-                key={to}
-                to={to}
-                className={`block px-4 py-3 rounded-xl text-sm font-medium ${location.pathname === to ? "bg-gold-50 text-gold-700" : "text-gray-700 hover:bg-gray-50"}`}
-              >
-                {label}
-              </Link>
-            ))}
+            {NAV_LINKS.map(({ to, label }) => {
+              const isResults = to === "/polls";
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium ${location.pathname === to ? "bg-gold-50 text-gold-700" : "text-gray-700 hover:bg-gray-50"}`}
+                >
+                  {isResults ? (
+                    <Trophy size={15} className="text-gold-500" />
+                  ) : null}
+                  {label}
+                  {isResults && (
+                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse ml-auto" />
+                  )}
+                </Link>
+              );
+            })}
             <div className="border-t border-gray-100 pt-2 mt-2">
               {isAuth ? (
                 <>

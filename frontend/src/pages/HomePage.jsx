@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
+import confetti from "canvas-confetti";
 import {
   Crown,
   Trophy,
@@ -16,9 +17,11 @@ import {
   BookOpen,
   Briefcase,
   Sparkles,
+  Flame,
 } from "lucide-react";
 import { useGetEventsQuery } from "../store/api/eventsApi.js";
 import { useGetCategoriesQuery } from "../store/api/categoriesApi.js";
+import { useGetAllPollsQuery } from "../store/api/polls.Api.js";
 import { getEventStatus, formatNumber } from "../utils/helpers.js";
 import {
   EventStatusBadge,
@@ -50,16 +53,95 @@ const GROUP_COLORS = {
   General: "from-orange-400 to-gold-500",
 };
 
-const CATEGORIES_PER_PAGE = 12;
+const CATEGORIES_PER_PAGE = 8;
+const TOP_STANDINGS_COUNT = 6;
+
+function useWelcomeConfetti(durationMs = 6500) {
+  useEffect(() => {
+    const end = Date.now() + durationMs;
+
+    const colors = [
+      "#22c55e", // Green
+      "#10b981", // Emerald
+      "#3b82f6", // Blue
+      "#60a5fa", // Sky Blue
+      "#ec4899", // Pink
+      "#f472b6", // Light Pink
+      "#ef4444", // Red
+      "#f87171", // Light Red
+      "#a855f7", // Purple
+      "#c084fc", // Lavender
+      "#f59e0b", // Amber
+      "#fbbf24", // Yellow
+      "#fb923c", // Orange
+      "#14b8a6", // Teal
+      "#ffffff", // White
+    ];
+
+    const ribbonShape = confetti.shapeFromPath({
+      path: "M0 0 L4 0 L4 22 L0 22 Z",
+    });
+
+    const origins = [
+      { x: 0.1, y: -0.05 },
+      { x: 0.5, y: -0.05 },
+      { x: 0.9, y: -0.05 },
+    ];
+
+    let frameId;
+
+    (function frame() {
+      const commonOrigin = origins[Math.floor(Math.random() * origins.length)];
+
+      // Ribbon confetti
+      confetti({
+        particleCount: 3,
+        shapes: [ribbonShape],
+        colors,
+        origin: commonOrigin,
+        startVelocity: 9,
+        gravity: 0.25,
+        drift: (Math.random() - 0.5) * 2,
+        scalar: 1.6,
+        ticks: 600,
+        spread: 90,
+      });
+
+      // Circles and squares
+      confetti({
+        particleCount: 5,
+        shapes: ["circle", "square"],
+        colors,
+        origin: commonOrigin,
+        startVelocity: 11,
+        gravity: 0.25,
+        drift: (Math.random() - 0.5) * 2,
+        scalar: 1,
+        ticks: 600,
+        spread: 100,
+      });
+
+      if (Date.now() < end) {
+        frameId = requestAnimationFrame(frame);
+      }
+    })();
+
+    return () => cancelAnimationFrame(frameId);
+  }, [durationMs]);
+}
 
 export default function HomePage() {
   const [activeGroup, setActiveGroup] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
   const categoriesSectionRef = useRef(null);
 
+  useWelcomeConfetti();
+
   const { data: events = [], isLoading: eventsLoading } = useGetEventsQuery({});
   const { data: categories = [], isLoading: catLoading } =
     useGetCategoriesQuery();
+  const { data: polls = [], isLoading: pollsLoading } =
+    useGetAllPollsQuery(undefined);
 
   // A single flag for "do we actually know the real numbers yet"
   const statsLoading = eventsLoading || catLoading;
@@ -76,6 +158,21 @@ export default function HomePage() {
     (s, e) => s + (e.totalVotes || 0),
     0,
   );
+
+  // Top standings: polls with a declared leader, ranked by leader's share
+  // of that event's total votes. Falls back gracefully if leaderVotes
+  // isn't present on a given poll — those just sort to the bottom.
+  const topStandings = useMemo(() => {
+    return polls
+      .filter((p) => p.leaderName && p.totalVotes > 0)
+      .map((p) => ({
+        ...p,
+        percent:
+          p.leaderVotes != null ? (p.leaderVotes / p.totalVotes) * 100 : null,
+      }))
+      .sort((a, b) => (b.percent ?? 0) - (a.percent ?? 0))
+      .slice(0, TOP_STANDINGS_COUNT);
+  }, [polls]);
 
   const filteredCategories =
     activeGroup === "All"
@@ -200,6 +297,7 @@ export default function HomePage() {
                 className="group-hover:translate-x-1 transition-transform"
               />
             </a>
+
             <Link
               to="/about"
               className="btn-secondary text-base px-10 py-4 bg-white/10 border-white/20 text-white hover:bg-white/20"
@@ -284,10 +382,91 @@ export default function HomePage() {
         </section>
       )}
 
+      {/* ── Top Standings ─────────────────────────────────────────────── */}
+      {!pollsLoading && topStandings.length > 0 && (
+        <section className="py-16 bg-white border-t border-gray-100">
+          <div className="page-container">
+            <div className="flex items-end justify-between gap-4 mb-8 flex-wrap">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Flame size={14} className="text-gold-500" />
+                  <p className="section-label text-gold-600">Top Standings</p>
+                </div>
+                <h2 className="text-2xl font-body font-bold text-gray-900">
+                  Who's leading right now
+                </h2>
+              </div>
+              <Link
+                to="/polls"
+                className="btn-ghost text-gold-600 hover:text-gold-700 hover:bg-gold-50"
+              >
+                View all results <ArrowRight size={14} />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {topStandings.map((poll, idx) => (
+                <Link
+                  key={poll.eventId}
+                  to={`/events/${poll.eventId}/results`}
+                  className="group card p-5 hover:shadow-card-hover hover:-translate-y-1 transition-all duration-200"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <p className="text-xs text-gray-400">
+                      {poll.category || "Uncategorized"}
+                    </p>
+                    <span className="flex items-center gap-1 text-2xs font-bold text-gold-600 bg-gold-50 border border-gold-100 rounded-full px-2 py-0.5">
+                      <Trophy size={10} /> #{idx + 1}
+                    </span>
+                  </div>
+
+                  <h3 className="font-semibold text-gray-900 text-sm leading-snug mb-1 group-hover:text-gold-700 transition-colors truncate">
+                    {poll.eventTitle}
+                  </h3>
+
+                  <p className="text-xs text-gray-500 mb-3">
+                    Leading:{" "}
+                    <span className="font-semibold text-gray-800">
+                      {poll.leaderName}
+                    </span>
+                  </p>
+
+                  {poll.percent != null && (
+                    <>
+                      <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mb-1.5">
+                        <div
+                          className="h-full bg-gradient-to-r from-gold-400 to-gold-600 rounded-full transition-all"
+                          style={{ width: `${Math.min(poll.percent, 100)}%` }}
+                        />
+                      </div>
+                      <p className="text-xs font-bold text-gold-600">
+                        {poll.percent.toFixed(1)}% of votes
+                      </p>
+                    </>
+                  )}
+
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
+                    <span className="text-xs text-gray-400">
+                      {poll.totalVotes >= 100
+                        ? `${poll.totalVotes.toLocaleString()}+`
+                        : poll.totalVotes.toLocaleString()}{" "}
+                      votes
+                    </span>
+                    <span className="text-xs font-semibold text-gold-600 flex items-center gap-1 group-hover:gap-2 transition-all">
+                      View standings <ChevronRight size={12} />
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       <section
         id="categories"
         ref={categoriesSectionRef}
-        className="py-20 bg-white scroll-mt-16"
+        className="py-20 bg-gray-50 scroll-mt-16"
       >
         <div className="page-container">
           <div className="text-center mb-12">
@@ -439,7 +618,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-white">
         <div className="page-container">
           <div className="text-center mb-14">
             <p className="section-label mb-3">Simple process</p>
@@ -521,7 +700,7 @@ export default function HomePage() {
  */
 function Pagination({ currentPage, totalPages, onPageChange }) {
   const getPageNumbers = () => {
-    const delta = 1; // pages to show on each side of current
+    const delta = 1;
     const range = [];
     const rangeWithDots = [];
     let l;
@@ -639,9 +818,6 @@ function EventCard({ event }) {
         <p className="text-xs text-gray-500 mb-3">{event.organization}</p>
         <CountdownTimer targetDate={event.endDate} />
         <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-gray-50">
-          {/* <span className="text-gray-400">
-            {formatNumber(event.totalVotes || 0)} votes
-          </span> */}
           <span className="font-semibold text-gold-600 flex items-center gap-1 group-hover:gap-2 transition-all">
             Vote now <ArrowRight size={12} />
           </span>

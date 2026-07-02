@@ -18,6 +18,10 @@ export const statsApi = apiSlice.injectEndpoints({
       query: (p = {}) => ({ url: "/stats/transactions", params: p }),
       providesTags: ["Stats"],
     }),
+    getPlatformStats: builder.query({
+      query: () => "/stats/platform",
+      providesTags: ["Stats"],
+    }),
   }),
 });
 
@@ -26,4 +30,5 @@ export const {
   useGetStaffStatsQuery,
   useGetEventStatsQuery,
   useGetRecentTransactionsQuery,
+  useGetPlatformStatsQuery,
 } = statsApi;

@@ -75,10 +75,10 @@ export default function Footer() {
                   className="mt-0.5 text-gold-500 flex-shrink-0"
                 />
                 <a
-                  href="mailto:admin@fasaawards.site"
+                  href="mailto:akitikori.wellington@gmail.com"
                   className="hover:text-gold-400 transition-colors"
                 >
-                  tj@gmail.com
+                  akitikori.wellington@gmail.com
                 </a>
               </li>
               <li className="flex items-start gap-2.5 text-sm text-gray-500">
@@ -90,7 +90,7 @@ export default function Footer() {
                   href="tel:09166670827"
                   className="hover:text-gold-400 transition-colors"
                 >
-                  09166670827
+                  07078588361
                 </a>
               </li>
             </ul>
