@@ -56,80 +56,92 @@ const GROUP_COLORS = {
 const CATEGORIES_PER_PAGE = 8;
 const TOP_STANDINGS_COUNT = 6;
 
-function useWelcomeConfetti(durationMs = 6500) {
+function useWelcomeConfetti(durationMs = 6000) {
   useEffect(() => {
     const end = Date.now() + durationMs;
 
-    const colors = [
-      "#22c55e", // Green
-      "#10b981", // Emerald
-      "#3b82f6", // Blue
-      "#60a5fa", // Sky Blue
-      "#ec4899", // Pink
-      "#f472b6", // Light Pink
-      "#ef4444", // Red
-      "#f87171", // Light Red
-      "#a855f7", // Purple
-      "#c084fc", // Lavender
-      "#f59e0b", // Amber
-      "#fbbf24", // Yellow
-      "#fb923c", // Orange
-      "#14b8a6", // Teal
-      "#ffffff", // White
+    // A premium, cohesive luxury palette (Gold, Emerald, Champagne, Muted Blue, Rose, Deep Purple)
+    const luxuryColors = [
+      "#d4af37", // Metallic Gold
+      "#f3e5ab", // Champagne
+      "#10b981", // Soft Emerald
+      "#3b82f6", // Premium Blue
+      "#ec4899", // Rose Pink
+      "#8b5cf6", // Deep Purple
+      "#ffffff", // Crisp White
     ];
 
+    // Elegant elongated ribbon shape
     const ribbonShape = confetti.shapeFromPath({
-      path: "M0 0 L4 0 L4 22 L0 22 Z",
+      path: "M0 0 L3 0 L3 20 L0 20 Z",
     });
 
-    const origins = [
-      { x: 0.1, y: -0.05 },
-      { x: 0.5, y: -0.05 },
-      { x: 0.9, y: -0.05 },
-    ];
+    // 1. FIRST BLAST: Cinematic opening bursts soaring high from the bottom corners
+    confetti({
+      particleCount: 90,
+      spread: 65,
+      origin: { x: 0, y: 0.9 }, // Bottom Left
+      colors: luxuryColors,
+      startVelocity: 55, // Pushes the particles high up toward the center
+      gravity: 0.9, // Lower gravity allows them to stay airborne longer
+      scalar: 1.2,
+    });
+
+    confetti({
+      particleCount: 90,
+      spread: 65,
+      origin: { x: 1, y: 0.9 }, // Bottom Right
+      colors: luxuryColors,
+      startVelocity: 55, // Pushes the particles high up toward the center
+      gravity: 0.9, // Lower gravity allows them to stay airborne longer
+      scalar: 1.2,
+    });
 
     let frameId;
 
+    // 2. CONTINUOUS CASCADE: Smooth, slow downpour from the top screen edge
     (function frame() {
-      const commonOrigin = origins[Math.floor(Math.random() * origins.length)];
+      // Fluidly generates random top entry points across the screen width
+      const randomX = Math.random();
 
-      // Ribbon confetti
+      // Softly falling luxury ribbons
       confetti({
-        particleCount: 3,
+        particleCount: 1,
         shapes: [ribbonShape],
-        colors,
-        origin: commonOrigin,
-        startVelocity: 9,
-        gravity: 0.25,
-        drift: (Math.random() - 0.5) * 2,
-        scalar: 1.6,
-        ticks: 600,
-        spread: 90,
+        colors: luxuryColors,
+        origin: { x: randomX, y: -0.1 },
+        startVelocity: 0, // Let gravity seamlessly handle the drop trajectory
+        gravity: 0.4, // Elegant, slow drift down
+        drift: (Math.random() - 0.5) * 1.5,
+        scalar: 1.4, // Keeps ribbons distinct and visible
+        ticks: 500,
       });
 
-      // Circles and squares
+      // Shimmering micro-dots (Adds a magical sparkle texture layer)
       confetti({
-        particleCount: 5,
-        shapes: ["circle", "square"],
-        colors,
-        origin: commonOrigin,
-        startVelocity: 11,
-        gravity: 0.25,
-        drift: (Math.random() - 0.5) * 2,
-        scalar: 1,
-        ticks: 600,
-        spread: 100,
+        particleCount: 2,
+        shapes: ["circle"],
+        colors: luxuryColors,
+        origin: { x: randomX, y: -0.1 },
+        startVelocity: Math.random() * 5 + 2,
+        gravity: 0.5,
+        drift: (Math.random() - 0.5) * 2.5,
+        scalar: 0.6, // Small particle sizes create mock 3D depth of field
+        ticks: 400,
       });
 
+      // Continue animating loop until duration expires
       if (Date.now() < end) {
         frameId = requestAnimationFrame(frame);
       }
     })();
 
-    return () => cancelAnimationFrame(frameId);
+    // Cleanup cycle loop on component unmount
+    return () => {
+      cancelAnimationFrame(frameId);
+    };
   }, [durationMs]);
 }
-
 export default function HomePage() {
   const [activeGroup, setActiveGroup] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
@@ -416,7 +428,7 @@ export default function HomePage() {
                       {poll.category || "Uncategorized"}
                     </p>
                     <span className="flex items-center gap-1 text-2xs font-bold text-gold-600 bg-gold-50 border border-gold-100 rounded-full px-2 py-0.5">
-                      <Trophy size={10} /> #{idx + 1}
+                      <Trophy size={10} />
                     </span>
                   </div>
 
