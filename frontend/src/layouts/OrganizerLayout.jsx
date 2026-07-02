@@ -1,6 +1,13 @@
 ﻿import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { LayoutDashboard, Calendar, Tag, LogOut, Crown } from "lucide-react";
+import {
+  LayoutDashboard,
+  Calendar,
+  Tag,
+  LogOut,
+  Crown,
+  Receipt,
+} from "lucide-react";
 import { logout, selectCurrentUser } from "../store/slices/authSlice.js";
 import { apiSlice } from "../store/api/apiSlice.js";
 
@@ -8,6 +15,7 @@ const links = [
   { to: "/organizer", label: "Overview", icon: LayoutDashboard, end: true },
   { to: "/organizer/events", label: "My Events", icon: Calendar },
   { to: "/organizer/categories", label: "Categories", icon: Tag },
+  { to: "/organizer/transactions", label: "Transactions", icon: Receipt },
 ];
 
 export default function OrganizerLayout() {

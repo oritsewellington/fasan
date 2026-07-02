@@ -84,6 +84,7 @@ export default function App() {
             <Route path="organizer" element={<OrganizerLayout />}>
               <Route index element={<OrganizerOverviewPage />} />
               <Route path="events" element={<OrganizerEventsPage />} />
+              <Route path="transactions" element={<AdminTransactionsPage />} />
               <Route
                 path="events/:eventId"
                 element={<OrganizerEventDetailPage />}

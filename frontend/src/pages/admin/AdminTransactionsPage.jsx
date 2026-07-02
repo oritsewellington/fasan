@@ -42,7 +42,7 @@ export default function AdminTransactionsPage() {
   const totalVotes = filtered.reduce((sum, t) => sum + (t.votes || 0), 0);
 
   return (
-    <div className="page-container py-8 animate-fade-in">
+    <div className="page-container py-8 animate-fade-in overflow-x-hidden">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
           <p className="section-label mb-1">Finance</p>
@@ -118,36 +118,80 @@ export default function AdminTransactionsPage() {
             </div>
           )}
 
-          <div className="card overflow-hidden overflow-x-auto">
-            <table className="w-full text-sm min-w-[700px]">
+          {/* ── Mobile: stacked cards ──────────────────────────────── */}
+          <div className="space-y-3 sm:hidden">
+            {paginated.map((t) => (
+              <div key={t._id} className="card p-4">
+                <div className="flex items-start justify-between gap-3 mb-2.5">
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 text-sm truncate">
+                      {t.voterName}
+                    </p>
+                    <p className="text-xs text-gray-400 truncate">
+                      {t.voterEmail}
+                    </p>
+                  </div>
+                  <p className="font-semibold text-gray-900 text-sm flex-shrink-0">
+                    {formatNaira(t.amount)}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                  <span className="truncate pr-2">{t.candidateName}</span>
+                  <span className="flex-shrink-0">
+                    {t.votes} vote{t.votes !== 1 ? "s" : ""}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-gray-400 pt-2 mt-2 border-t border-gray-50">
+                  <span className="truncate pr-2">{t.eventTitle}</span>
+                  <span className="flex-shrink-0">
+                    {formatEventDate(t.createdAt)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Desktop: table ─────────────────────────────────────── */}
+          <div className="hidden sm:block card overflow-hidden">
+            <table className="w-full text-sm">
               <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
                 <tr>
                   <th className="text-left px-5 py-3 font-medium">Voter</th>
                   <th className="text-left px-5 py-3 font-medium">Candidate</th>
-                  <th className="text-left px-5 py-3 font-medium">Event</th>
+                  <th className="text-left px-5 py-3 font-medium hidden lg:table-cell">
+                    Event
+                  </th>
                   <th className="text-left px-5 py-3 font-medium">Votes</th>
                   <th className="text-left px-5 py-3 font-medium">Amount</th>
-                  <th className="text-left px-5 py-3 font-medium">Date</th>
+                  <th className="text-left px-5 py-3 font-medium hidden md:table-cell">
+                    Date
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {paginated.map((t) => (
                   <tr key={t._id} className="hover:bg-gray-50/50">
-                    <td className="px-5 py-3.5">
-                      <p className="font-medium text-gray-900">{t.voterName}</p>
-                      <p className="text-xs text-gray-400">{t.voterEmail}</p>
+                    <td className="px-5 py-3.5 max-w-[180px]">
+                      <p className="font-medium text-gray-900 truncate">
+                        {t.voterName}
+                      </p>
+                      <p className="text-xs text-gray-400 truncate">
+                        {t.voterEmail}
+                      </p>
                     </td>
-                    <td className="px-5 py-3.5 text-gray-600">
+                    <td className="px-5 py-3.5 text-gray-600 max-w-[160px] truncate">
                       {t.candidateName}
                     </td>
-                    <td className="px-5 py-3.5 text-gray-500 text-xs">
+                    <td className="px-5 py-3.5 text-gray-500 text-xs max-w-[160px] truncate hidden lg:table-cell">
                       {t.eventTitle}
                     </td>
                     <td className="px-5 py-3.5 text-gray-600">{t.votes}</td>
-                    <td className="px-5 py-3.5 font-semibold text-gray-900">
+                    <td className="px-5 py-3.5 font-semibold text-gray-900 whitespace-nowrap">
                       {formatNaira(t.amount)}
                     </td>
-                    <td className="px-5 py-3.5 text-gray-400 text-xs">
+                    <td className="px-5 py-3.5 text-gray-400 text-xs whitespace-nowrap hidden md:table-cell">
                       {formatEventDate(t.createdAt)}
                     </td>
                   </tr>
@@ -157,7 +201,7 @@ export default function AdminTransactionsPage() {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-5 px-1">
+            <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 mt-5 px-1">
               <p className="text-xs text-gray-400">
                 Showing {(currentPage - 1) * PAGE_SIZE + 1}–
                 {Math.min(currentPage * PAGE_SIZE, filtered.length)} of{" "}
