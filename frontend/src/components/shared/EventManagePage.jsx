@@ -114,27 +114,6 @@ export default function EventManagePage({ basePath = "/organizer" }) {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard
-          label="Total Votes"
-          value={formatNumber(data.totalVotes || 0)}
-          icon={Vote}
-        />
-        <StatCard
-          label="Total Revenue"
-          value={formatNaira(data.totalRevenue || 0)}
-          icon={DollarSign}
-          colorClass="text-emerald-600"
-        />
-        <StatCard
-          label="Your Earnings"
-          value={formatNaira(data.organizerCut || 0)}
-          icon={DollarSign}
-          colorClass="text-gold-600"
-        />
-        <StatCard label="Candidates" value={candidates.length} icon={Users} />
-      </div>
-
       <div className="card p-4 sm:p-6">
         <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
           <h2 className="font-display font-bold text-gray-900">Candidates</h2>

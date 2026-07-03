@@ -29,7 +29,6 @@ export default function CandidateFormModal({
     if (candidate) {
       setForm({
         name: candidate.name || "",
-        bio: candidate.bio || "",
         department: candidate.department || "",
         level: candidate.level || "",
       });
@@ -54,7 +53,6 @@ export default function CandidateFormModal({
 
     const fd = new FormData();
     fd.append("name", form.name);
-    fd.append("bio", form.bio);
     fd.append("department", form.department);
     fd.append("level", form.level);
     if (photoFile) fd.append("photo", photoFile);
@@ -160,19 +158,6 @@ export default function CandidateFormModal({
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Bio
-          </label>
-          <textarea
-            value={form.bio}
-            onChange={(e) => setForm({ ...form, bio: e.target.value })}
-            rows={3}
-            className="input-field resize-none"
-            placeholder="A short description (optional)"
-          />
-        </div>
-
         <div className="flex gap-3 pt-2">
           <button
             type="button"
@@ -201,5 +186,5 @@ export default function CandidateFormModal({
 }
 
 function emptyForm() {
-  return { name: "", bio: "", department: "", level: "" };
+  return { name: "", department: "", level: "" };
 }

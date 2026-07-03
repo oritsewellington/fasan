@@ -6,9 +6,6 @@ import User from "../models/User.model.js";
 
 dotenv.config();
 
-// ---------------------------------------------------------------------
-// Accounts
-// ---------------------------------------------------------------------
 const SEED_USERS = [
   {
     name: "Zondo",
@@ -30,15 +27,8 @@ const SEED_USERS = [
   },
 ];
 
-// ---------------------------------------------------------------------
-// Event defaults — adjust these to match what you actually want to
-// charge / how long voting should run. Voting starts immediately
-// (now) and I've defaulted the window to 30 days; change EVENT_DURATION_DAYS
-// if that's wrong.
-// ---------------------------------------------------------------------
 const ORGANIZATION_NAME = "FASA — Faculty of Arts Students' Association";
-const PRICE_PER_VOTE_KOBO = 10000; // ₦100 per vote
-const EVENT_DURATION_DAYS = 14;
+const PRICE_PER_VOTE_KOBO = 10000;
 
 const SEED_CATEGORIES = [
   {
@@ -277,7 +267,6 @@ async function seedUsers() {
     if (user) {
       skipped++;
     } else {
-      // Password gets hashed automatically by the User model's pre-save hook
       user = await User.create({
         name: u.name,
         email: u.email,
@@ -294,10 +283,8 @@ async function seedUsers() {
 }
 
 async function seedCategoriesAndEvents(admin) {
-  const now = new Date();
-  const endDate = new Date(
-    now.getTime() + EVENT_DURATION_DAYS * 24 * 60 * 60 * 1000,
-  );
+  const startDate = new Date("2026-07-06T00:00:00");
+  const endDate = new Date("2026-08-17T23:59:59");
 
   let catsCreated = 0,
     catsSkipped = 0,
@@ -321,7 +308,6 @@ async function seedCategoriesAndEvents(admin) {
       catsCreated++;
     }
 
-    // One event per category — carries the category's own name + description
     const existingEvent = await Event.findOne({ categoryId: category._id });
     if (existingEvent) {
       eventsSkipped++;
@@ -334,7 +320,7 @@ async function seedCategoriesAndEvents(admin) {
       organization: ORGANIZATION_NAME,
       category: category.name,
       categoryId: category._id,
-      startDate: now,
+      startDate,
       endDate,
       isOpen: true,
       pricePerVote: PRICE_PER_VOTE_KOBO,

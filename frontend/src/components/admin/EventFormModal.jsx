@@ -16,18 +16,11 @@ import {
 import { useGetCategoriesQuery } from "../../store/api/categoriesApi.js";
 import { selectCurrentUser } from "../../store/slices/authSlice.js";
 
-// Import the datepicker default CSS structure
 import "react-datepicker/dist/react-datepicker.css";
 
-export default function EventFormModal({
-  open,
-  onClose,
-  event,
-  organizers = [],
-}) {
+export default function EventFormModal({ open, onClose, event }) {
   const isEdit = !!event;
   const currentUser = useSelector(selectCurrentUser);
-  const isOrganizer = currentUser?.role === "organizer";
   const [form, setForm] = useState(emptyForm());
   const [bannerFile, setBannerFile] = useState(null);
   const [bannerPreview, setBannerPreview] = useState("");
@@ -52,14 +45,10 @@ export default function EventFormModal({
         pricePerVote: event.pricePerVote
           ? (event.pricePerVote / 100).toString()
           : "",
-        organizerId: event.organizer?._id || event.organizerId || "",
       });
       setBannerPreview(event.bannerImage || "");
     } else {
-      setForm({
-        ...emptyForm(),
-        organizerId: isOrganizer ? currentUser._id || currentUser.id : "",
-      });
+      setForm(emptyForm());
       setBannerPreview("");
     }
     setBannerFile(null);
@@ -90,8 +79,7 @@ export default function EventFormModal({
       !form.organization ||
       !form.startDate ||
       !form.endDate ||
-      !form.pricePerVote ||
-      (!isOrganizer && !form.organizerId)
+      !form.pricePerVote
     ) {
       return toast.error("Please fill in all required fields.");
     }
@@ -108,7 +96,6 @@ export default function EventFormModal({
     fd.append("startDate", form.startDate.toISOString());
     fd.append("endDate", form.endDate.toISOString());
     fd.append("pricePerVote", Math.round(parseFloat(form.pricePerVote) * 100));
-    if (!isOrganizer) fd.append("organizerId", form.organizerId);
     if (bannerFile) fd.append("banner", bannerFile);
 
     try {
@@ -179,9 +166,7 @@ export default function EventFormModal({
                 No categories exist yet. Create one first, then come back to
                 attach it to this event.{" "}
                 <Link
-                  to={
-                    isOrganizer ? "/organizer/categories" : "/admin/categories"
-                  }
+                  to="/admin/categories"
                   className="font-semibold underline"
                   target="_blank"
                   rel="noreferrer"
@@ -236,46 +221,18 @@ export default function EventFormModal({
           />
         </div>
 
-        {/* Organization / Organizer */}
-        <div
-          className={`grid ${isOrganizer ? "grid-cols-1" : "grid-cols-2"} gap-4`}
-        >
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Organization *
-            </label>
-            <input
-              value={form.organization}
-              onChange={(e) =>
-                setForm({ ...form, organization: e.target.value })
-              }
-              className="input-field"
-              placeholder="Faculty of Arts, UNIBEN"
-              required
-            />
-          </div>
-          {!isOrganizer && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Organizer *
-              </label>
-              <select
-                value={form.organizerId}
-                onChange={(e) =>
-                  setForm({ ...form, organizerId: e.target.value })
-                }
-                className="input-field"
-                required
-              >
-                <option value="">Select organizer...</option>
-                {organizers.map((o) => (
-                  <option key={o._id} value={o._id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+        {/* Organization */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            Organization *
+          </label>
+          <input
+            value={form.organization}
+            onChange={(e) => setForm({ ...form, organization: e.target.value })}
+            className="input-field"
+            placeholder="Faculty of Arts, UNIBEN"
+            required
+          />
         </div>
 
         {/* Custom Rich DatePicker Layout */}
@@ -379,6 +336,5 @@ function emptyForm() {
     startDate: null,
     endDate: null,
     pricePerVote: "",
-    organizerId: "",
   };
 }

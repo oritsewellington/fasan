@@ -31,6 +31,21 @@ import {
 const MEDALS = ["🥇", "🥈", "🥉"];
 const CANDIDATES_PER_PAGE = 12;
 
+// Same flagship-detection + banner fallback logic as the events list, kept
+// in sync so a candidate lands on a detail page that matches the card
+// they clicked from.
+const MR_MISS_FASA_BANNER = "/mr-miss-fasa.jpeg";
+const DEFAULT_EVENT_BANNER = "/fasa-banner.jpeg";
+
+function isMrMissFasaEvent(event) {
+  const name = (event.category || event.title || "")
+    .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return name === "mr fasa" || name === "miss fasa";
+}
+
 export default function EventDetailPage() {
   const { eventId } = useParams();
   const { data: event, isLoading: evLoading } = useGetEventQuery(eventId);
@@ -40,7 +55,6 @@ export default function EventDetailPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const candidatesTopRef = useRef(null);
 
-  // Reset to page 1 whenever we land on a different event.
   useEffect(() => {
     setCurrentPage(1);
   }, [eventId]);
@@ -49,8 +63,8 @@ export default function EventDetailPage() {
 
   if (!event)
     return (
-      <div style={{ padding: "80px 20px", textAlign: "center" }}>
-        <p style={{ color: "#6b7280", marginBottom: 16 }}>Event not found.</p>
+      <div className="py-24 px-5 text-center">
+        <p className="text-gray-500 mb-4">Event not found.</p>
         <Link to="/events" className="btn-primary">
           Back to events
         </Link>
@@ -63,14 +77,17 @@ export default function EventDetailPage() {
   const totalVotes = getTotalVotes(candidates);
   const leaderVotes = ranked[0]?.totalVotes || 0;
 
+  const isFlagship = isMrMissFasaEvent(event);
+  const bannerSrc =
+    event.bannerImage ||
+    (isFlagship ? MR_MISS_FASA_BANNER : DEFAULT_EVENT_BANNER);
+
   const totalPages = Math.max(
     1,
     Math.ceil(ranked.length / CANDIDATES_PER_PAGE),
   );
   const safePage = Math.min(currentPage, totalPages);
   const startIdx = (safePage - 1) * CANDIDATES_PER_PAGE;
-  // Rank stays tied to the full standings, not the page slice, so medals
-  // and numbers never reset per page.
   const paginatedCandidates = ranked
     .map((candidate, idx) => ({ candidate, rank: idx + 1 }))
     .slice(startIdx, startIdx + CANDIDATES_PER_PAGE);
@@ -83,109 +100,119 @@ export default function EventDetailPage() {
       block: "start",
     });
   };
+
   return (
-    <div
-      style={{
-        fontFamily: "Inter, sans-serif",
-        background: "#f9fafb",
-        minHeight: "100vh",
-      }}
-    >
-      {/* ── Event header ─────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-gray-100">
-        {/* Banner image — full width, collapses gracefully */}
-        {event.bannerImage && (
+    <div className="bg-gray-50 min-h-screen animate-fade-in">
+      {/* ── Hero: banner with overlaid title/badges ─────────────────── */}
+      <div className="relative bg-gray-900">
+        <div className="relative w-full h-[52vw] max-h-[420px] min-h-[260px] overflow-hidden">
           <img
-            src={event.bannerImage}
+            src={bannerSrc}
             alt={event.title}
-            className="w-full h-[min(45vw,280px)] object-cover block"
+            className={`w-full h-full object-cover ${isFlagship ? "object-top" : "object-center"}`}
           />
+          {/* Scrim: strong at the bottom for text legibility, light at top
+              so the back button/flagship tag stay readable without hiding
+              the art. */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10" />
+        </div>
+
+        <Link
+          to="/events"
+          className="absolute top-4 left-4 sm:top-6 sm:left-6 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-black/40 backdrop-blur-md text-white text-xs font-semibold hover:bg-black/60 transition-colors"
+        >
+          <ArrowLeft size={14} /> Back to events
+        </Link>
+
+        {isFlagship && (
+          <span className="absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-1 px-3 py-1.5 rounded-full bg-gold-500/90 backdrop-blur-sm text-black text-xs font-bold shadow-sm">
+            <Crown size={12} /> FLAGSHIP EVENT
+          </span>
         )}
 
-        <div className="page-container px-4 pt-5 pb-6">
-          {/* Back link */}
-          <Link
-            to="/events"
-            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-gray-500 hover:text-gray-700 no-underline mb-4"
-          >
-            <ArrowLeft size={15} /> Back to events
-          </Link>
-
-          {/* Badges row */}
-          <div className="flex flex-wrap items-center gap-2 mb-2.5">
-            <EventStatusBadge status={status} />
-            {event.category && (
-              <span className="badge-gold">{event.category}</span>
-            )}
-          </div>
-
-          {/* Title */}
-          <h1 className="text-[clamp(1.25rem,5vw,2rem)] font-extrabold text-gray-900 leading-tight mb-1.5">
-            {event.title}
-          </h1>
-
-          {event.organization && (
-            <p className="text-[13px] text-gray-400 mb-3">
-              {event.organization}
-            </p>
-          )}
-
-          {event.description && (
-            <p className="text-sm text-gray-600 leading-relaxed mb-3.5 max-w-[560px]">
-              {event.description}
-            </p>
-          )}
-
-          {/* Meta row — wraps on small screens */}
-          <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs text-gray-600 font-medium mb-3.5">
-            <span className="flex items-center gap-1.5">
-              <Calendar size={13} className="text-gold-500 flex-shrink-0" />
-              Starts: {formatEventDate(event.startDate)}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Clock size={13} className="text-gold-500 flex-shrink-0" />
-              Ends: {formatEventDate(event.endDate)}
-            </span>
-            <span className="flex items-center gap-1.5 font-semibold text-gray-800">
-              <Users size={13} className="text-gold-500 flex-shrink-0" />
-              {totalVotes > 100 ? "100+" : totalVotes.toLocaleString()} votes
-              cast
-            </span>
-          </div>
-
-          {/* Price + countdown row */}
-          <div className="flex flex-wrap items-end justify-between gap-3.5">
-            <div className="inline-flex flex-col bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 rounded-xl px-4 py-2.5">
-              <span className="text-[11px] font-semibold text-amber-800 uppercase tracking-wide">
-                Price per vote
-              </span>
-              <span className="text-[22px] font-extrabold text-amber-900 leading-tight">
-                ₦{(event.pricePerVote / 100).toLocaleString()}
-              </span>
+        <div className="absolute bottom-0 left-0 right-0">
+          <div className="page-container pb-6 sm:pb-8">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <EventStatusBadge status={status} />
+              {event.category && (
+                <span className="badge-gold">{event.category}</span>
+              )}
             </div>
-            {votingOpen && (
-              <div className="flex-shrink-0">
-                <CountdownTimer targetDate={event.endDate} label="Closes in" />
-              </div>
+            <h1 className="font-display text-[clamp(1.5rem,5vw,2.5rem)] font-extrabold text-white leading-tight mb-1.5 drop-shadow-sm max-w-2xl">
+              {event.title}
+            </h1>
+            {event.organization && (
+              <p className="text-sm text-gray-300">{event.organization}</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* ── Voting closed banner ──────────────────────────────────────── */}
+      {/* ── Ticket-stub info card, overlapping the hero ─────────────── */}
+      <div className="page-container relative z-10 -mt-6 sm:-mt-8 mb-2">
+        <div className="card p-5 sm:p-6 shadow-card-hover">
+          <div className="flex flex-wrap items-center justify-between gap-5">
+            <div className="flex flex-wrap gap-x-6 gap-y-3">
+              <MetaItem
+                icon={Calendar}
+                label="Starts"
+                value={formatEventDate(event.startDate)}
+              />
+              <MetaItem
+                icon={Clock}
+                label="Ends"
+                value={formatEventDate(event.endDate)}
+              />
+              {/* <MetaItem
+                icon={Users}
+                label="Votes cast"
+                value={totalVotes > 100 ? "100+" : totalVotes.toLocaleString()}
+              /> */}
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col bg-gradient-to-br from-gold-50 to-gold-100 border border-gold-200 rounded-xl px-4 py-2.5">
+                <span className="text-2xs font-semibold text-gold-800 uppercase tracking-wide">
+                  Price per vote
+                </span>
+                <span className="text-xl font-extrabold text-gold-900 leading-tight">
+                  ₦{(event.pricePerVote / 100).toLocaleString()}
+                </span>
+              </div>
+              {votingOpen && (
+                <div className="hidden sm:block">
+                  <CountdownTimer
+                    targetDate={event.endDate}
+                    label="Closes in"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {votingOpen && (
+            <div className="sm:hidden mt-4 pt-4 border-t border-gray-50">
+              <CountdownTimer targetDate={event.endDate} label="Closes in" />
+            </div>
+          )}
+
+          {event.description && (
+            <p className="text-sm text-gray-600 leading-relaxed mt-5 pt-5 border-t border-gray-50">
+              {event.description}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* ── Voting closed notice ─────────────────────────────────────── */}
       {!votingOpen && (
-        <div className="page-container" style={{ padding: "16px 16px 0" }}>
+        <div className="page-container mt-5">
           <div
-            style={{
-              borderRadius: 14,
-              padding: "14px 18px",
-              fontSize: 13,
-              fontWeight: 600,
-              textAlign: "center",
-              background: status === "upcoming" ? "#eff6ff" : "#fef2f2",
-              color: status === "upcoming" ? "#1d4ed8" : "#b91c1c",
-              border: `1px solid ${status === "upcoming" ? "#bfdbfe" : "#fecaca"}`,
-            }}
+            className={`rounded-2xl px-5 py-3.5 text-sm font-semibold text-center border ${
+              status === "upcoming"
+                ? "bg-blue-50 text-blue-700 border-blue-200"
+                : "bg-red-50 text-red-700 border-red-200"
+            }`}
           >
             {status === "upcoming"
               ? "⏳ Voting has not started yet. Check back soon!"
@@ -195,11 +222,7 @@ export default function EventDetailPage() {
       )}
 
       {/* ── Candidates ───────────────────────────────────────────────── */}
-      <div
-        className="page-container"
-        style={{ padding: "20px 16px 40px" }}
-        ref={candidatesTopRef}
-      >
+      <div className="page-container py-10" ref={candidatesTopRef}>
         {ranked.length === 0 ? (
           <EmptyState
             icon={Crown}
@@ -208,83 +231,47 @@ export default function EventDetailPage() {
           />
         ) : (
           <>
-            {/* Section header */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 6,
-                flexWrap: "wrap",
-                gap: 8,
-              }}
-            >
+            <div className="flex items-end justify-between flex-wrap gap-2 mb-1">
               <div>
-                <h2
-                  style={{
-                    fontSize: "1.1rem",
-                    fontWeight: 800,
-                    color: "#111827",
-                    margin: 0,
-                  }}
-                >
+                <h2 className="font-display text-xl font-extrabold text-gray-900">
                   {ranked.length} Candidate{ranked.length !== 1 ? "s" : ""}
                 </h2>
-                <p
-                  style={{ fontSize: 12, color: "#9ca3af", margin: "2px 0 0" }}
-                >
+                <p className="text-xs text-gray-400 mt-0.5">
                   Bars show position relative to the leader
                 </p>
               </div>
             </div>
 
-            {/* Pagination summary */}
             {totalPages > 1 && (
-              <p
-                style={{
-                  fontSize: 12,
-                  color: "#9ca3af",
-                  margin: "0 0 14px",
-                }}
-              >
+              <p className="text-xs text-gray-400 mb-4">
                 Showing{" "}
-                <span style={{ fontWeight: 600, color: "#6b7280" }}>
+                <span className="font-semibold text-gray-600">
                   {startIdx + 1}–
                   {Math.min(startIdx + CANDIDATES_PER_PAGE, ranked.length)}
                 </span>{" "}
                 of{" "}
-                <span style={{ fontWeight: 600, color: "#6b7280" }}>
+                <span className="font-semibold text-gray-600">
                   {ranked.length}
                 </span>
               </p>
             )}
 
-            {/* Grid — 2 cols on phones, 3 on tablets, 4 on desktop */}
             <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
-                gap: 12,
-                marginTop: totalPages > 1 ? 0 : 10,
-              }}
+              className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 ${
+                totalPages > 1 ? "" : "mt-2.5"
+              }`}
             >
-              <style>{`
-                @media(min-width: 560px)  { .cand-grid { grid-template-columns: repeat(3, 1fr) !important; } }
-                @media(min-width: 900px)  { .cand-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 16px !important; } }
-              `}</style>
-              <div className="cand-grid" style={{ display: "contents" }}>
-                {paginatedCandidates.map(({ candidate, rank }) => (
-                  <CandidateCard
-                    key={candidate._id}
-                    candidate={candidate}
-                    rank={rank}
-                    totalVotes={totalVotes}
-                    leaderVotes={leaderVotes}
-                    eventId={eventId}
-                    isOpen={votingOpen}
-                  />
-                ))}
-              </div>
+              {paginatedCandidates.map(({ candidate, rank }) => (
+                <CandidateCard
+                  key={candidate._id}
+                  candidate={candidate}
+                  rank={rank}
+                  totalVotes={totalVotes}
+                  leaderVotes={leaderVotes}
+                  eventId={eventId}
+                  isOpen={votingOpen}
+                />
+              ))}
             </div>
 
             {totalPages > 1 && (
@@ -295,29 +282,10 @@ export default function EventDetailPage() {
               />
             )}
 
-            {/* Legend */}
             {totalVotes > 0 && (
-              <div
-                style={{
-                  marginTop: 24,
-                  padding: "12px 16px",
-                  background: "#fff",
-                  borderRadius: 12,
-                  border: "1px solid #f3f4f6",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                }}
-              >
-                <Trophy size={15} style={{ color: "#f59e0b", flexShrink: 0 }} />
-                <p
-                  style={{
-                    fontSize: 12,
-                    color: "#6b7280",
-                    margin: 0,
-                    lineHeight: 1.5,
-                  }}
-                >
+              <div className="flex items-center gap-2.5 mt-6 px-4 py-3 bg-white rounded-xl border border-gray-100">
+                <Trophy size={15} className="text-gold-500 flex-shrink-0" />
+                <p className="text-xs text-gray-500 leading-relaxed">
                   Progress bars show each candidate's votes relative to the
                   current leader. The leader always shows a full bar.
                   Percentages show share of total votes.
@@ -331,18 +299,27 @@ export default function EventDetailPage() {
   );
 }
 
-/**
- * Clean numbered pagination, styled to match this page's gold/amber palette.
- * Truncates to ~7 visible buttons max so it holds up with large candidate
- * lists (e.g. a "Most Popular" category with 60+ nominees).
- */
+function MetaItem({ icon: Icon, label, value }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="w-8 h-8 rounded-lg bg-gold-50 flex items-center justify-center flex-shrink-0">
+        <Icon size={14} className="text-gold-600" />
+      </div>
+      <div className="leading-tight">
+        <p className="text-2xs text-gray-400 font-medium">{label}</p>
+        <p className="text-xs font-semibold text-gray-800">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+/** Matches the gold-accented pagination used on the Events list page. */
 function Pagination({ currentPage, totalPages, onPageChange }) {
   const getPageNumbers = () => {
     const delta = 1;
     const range = [];
     const rangeWithDots = [];
     let l;
-
     for (let i = 1; i <= totalPages; i++) {
       if (
         i === 1 ||
@@ -352,77 +329,35 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
         range.push(i);
       }
     }
-
     for (const i of range) {
       if (l) {
-        if (i - l === 2) {
-          rangeWithDots.push(l + 1);
-        } else if (i - l !== 1) {
-          rangeWithDots.push("...");
-        }
+        if (i - l === 2) rangeWithDots.push(l + 1);
+        else if (i - l !== 1) rangeWithDots.push("...");
       }
       rangeWithDots.push(i);
       l = i;
     }
-
     return rangeWithDots;
-  };
-
-  const btnBase = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    fontSize: 13,
-    fontWeight: 600,
-    border: "1px solid #e5e7eb",
-    background: "#fff",
-    color: "#4b5563",
-    cursor: "pointer",
-    transition: "all 0.15s",
   };
 
   return (
     <nav
       aria-label="Candidates pagination"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 6,
-        marginTop: 28,
-        flexWrap: "wrap",
-      }}
+      className="flex items-center justify-center gap-1.5 mt-8 flex-wrap"
     >
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
         aria-label="Previous page"
-        style={{
-          ...btnBase,
-          opacity: currentPage === 1 ? 0.35 : 1,
-          pointerEvents: currentPage === 1 ? "none" : "auto",
-        }}
+        className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 text-gray-500 hover:border-gold-300 hover:text-gold-600 hover:bg-gold-50 disabled:opacity-30 disabled:pointer-events-none transition-all"
       >
         <ChevronLeft size={16} />
       </button>
-
       {getPageNumbers().map((page, idx) =>
         page === "..." ? (
           <span
             key={`dots-${idx}`}
-            style={{
-              width: 36,
-              height: 36,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#d1d5db",
-              fontSize: 13,
-              userSelect: "none",
-            }}
+            className="w-9 h-9 flex items-center justify-center text-gray-300 text-sm select-none"
           >
             …
           </span>
@@ -431,32 +366,21 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
             key={page}
             onClick={() => onPageChange(page)}
             aria-current={page === currentPage ? "page" : undefined}
-            style={
+            className={`w-9 h-9 rounded-xl text-sm font-medium border transition-all ${
               page === currentPage
-                ? {
-                    ...btnBase,
-                    background: "linear-gradient(135deg, #fbbf24, #f59e0b)",
-                    borderColor: "#f59e0b",
-                    color: "#fff",
-                    boxShadow: "0 3px 10px rgba(245,158,11,0.35)",
-                  }
-                : btnBase
-            }
+                ? "bg-gold-500 text-white border-gold-500 shadow-sm"
+                : "bg-white text-gray-600 border-gray-200 hover:border-gold-300 hover:text-gold-600 hover:bg-gold-50"
+            }`}
           >
             {page}
           </button>
         ),
       )}
-
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
         aria-label="Next page"
-        style={{
-          ...btnBase,
-          opacity: currentPage === totalPages ? 0.35 : 1,
-          pointerEvents: currentPage === totalPages ? "none" : "auto",
-        }}
+        className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 text-gray-500 hover:border-gold-300 hover:text-gold-600 hover:bg-gold-50 disabled:opacity-30 disabled:pointer-events-none transition-all"
       >
         <ChevronRight size={16} />
       </button>
@@ -472,16 +396,12 @@ function CandidateCard({
   eventId,
   isOpen,
 }) {
-  // Tracks whether the photo URL 404s or fails to decode, so we can fall
-  // back to a clean placeholder instead of a broken-image icon.
   const [imgError, setImgError] = useState(false);
 
-  // Bar relative to leader (best UX for race standings)
   const relPct =
     leaderVotes > 0
       ? Math.min(100, ((candidate.totalVotes || 0) / leaderVotes) * 100)
       : 0;
-  // Label shows share of total votes (factually accurate number)
   const sharePct = calcPercent(candidate.totalVotes, totalVotes).toFixed(1);
   const isLeader = rank === 1 && (candidate.totalVotes || 0) > 0;
 
@@ -497,270 +417,85 @@ function CandidateCard({
   return (
     <Link
       to={isOpen ? `/events/${eventId}/candidates/${candidate._id}` : "#"}
-      style={{
-        display: "block",
-        textDecoration: "none",
-        borderRadius: 14,
-        overflow: "hidden",
-        background: "#fff",
-        border: isLeader ? "2px solid #f59e0b" : "1px solid #f3f4f6",
-        boxShadow: isLeader
-          ? "0 4px 20px rgba(245,158,11,0.18)"
-          : "0 1px 3px rgba(0,0,0,0.06)",
-        transition: "transform 0.15s, box-shadow 0.15s",
-        pointerEvents: isOpen ? "auto" : "none",
-        opacity: isOpen ? 1 : 0.82,
-      }}
-      onMouseEnter={(e) => {
-        if (!isOpen) return;
-        e.currentTarget.style.transform = "translateY(-3px)";
-        e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.12)";
-        const img = e.currentTarget.querySelector("[data-photo-zoom]");
-        if (img) img.style.transform = "scale(1.06)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "";
-        e.currentTarget.style.boxShadow = isLeader
-          ? "0 4px 20px rgba(245,158,11,0.18)"
-          : "0 1px 3px rgba(0,0,0,0.06)";
-        const img = e.currentTarget.querySelector("[data-photo-zoom]");
-        if (img) img.style.transform = "scale(1)";
-      }}
+      className={`group block rounded-2xl overflow-hidden bg-white transition-all duration-200 ${
+        isOpen
+          ? "hover:-translate-y-1 hover:shadow-card-hover cursor-pointer"
+          : "pointer-events-none opacity-80"
+      } ${
+        isLeader
+          ? "border-2 border-gold-400 shadow-[0_4px_20px_rgba(245,158,11,0.18)]"
+          : "border border-gray-100 shadow-card"
+      }`}
     >
-      {/* Photo — fixed portrait aspect-ratio (4:5) instead of a
-          viewport-width-based height. A vw-based height shrinks the visible
-          area disproportionately as columns increase (e.g. 4-col desktop),
-          which crops faces awkwardly. Aspect-ratio keeps every photo framed
-          the same way regardless of grid density or screen size. */}
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          aspectRatio: "4 / 5",
-          overflow: "hidden",
-          background: "linear-gradient(135deg,#f3f4f6,#e5e7eb)",
-        }}
-      >
+      <div className="relative w-full aspect-[4/5] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
         {showPhoto ? (
           <img
-            data-photo-zoom
             src={candidate.photo}
             alt={candidate.name}
             loading="lazy"
             decoding="async"
             onError={() => setImgError(true)}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              objectPosition: "center 18%",
-              display: "block",
-              transition: "transform 0.35s ease-out",
-            }}
+            className="w-full h-full object-cover object-[center_18%] transition-transform duration-300 group-hover:scale-[1.06]"
           />
         ) : (
-          <div
-            style={{
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-            }}
-          >
-            <div
-              style={{
-                width: 52,
-                height: 52,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg,#fbbf24,#f59e0b)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                fontWeight: 800,
-                fontSize: 17,
-                boxShadow: "0 2px 8px rgba(245,158,11,0.3)",
-              }}
-            >
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="w-13 h-13 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-white font-extrabold text-lg shadow-sm">
               {initials || <Crown size={22} />}
             </div>
           </div>
         )}
 
-        {/* Rank badge */}
-        <div style={{ position: "absolute", top: 8, left: 8 }}>
+        <div className="absolute top-2 left-2">
           {rank <= 3 ? (
-            <span
-              style={{
-                fontSize: 20,
-                filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
-              }}
-            >
+            <span className="text-xl drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
               {MEDALS[rank - 1]}
             </span>
           ) : (
-            <span
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.92)",
-                backdropFilter: "blur(4px)",
-                fontSize: 10,
-                fontWeight: 800,
-                color: "#374151",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
-              }}
-            >
+            <span className="w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm text-2xs font-extrabold text-gray-700 flex items-center justify-center shadow-sm">
               {rank}
             </span>
           )}
         </div>
 
-        {/* Candidate code */}
-        <div
-          style={{
-            position: "absolute",
-            top: 8,
-            right: 8,
-            background: "rgba(0,0,0,0.6)",
-            backdropFilter: "blur(4px)",
-            color: "#fff",
-            fontSize: 9,
-            fontWeight: 700,
-            padding: "3px 7px",
-            borderRadius: 999,
-            maxWidth: "45%",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
+        <div className="absolute top-2 right-2 max-w-[45%] px-1.5 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold truncate">
           {candidate.candidateCode ||
             "FASA-" + String(candidate.candidateNumber).padStart(4, "0")}
         </div>
 
-        {/* Name overlay */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            background:
-              "linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.35) 65%, transparent)",
-            padding: "30px 10px 10px",
-          }}
-        >
-          <p
-            style={{
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 13,
-              margin: 0,
-              lineHeight: 1.3,
-              overflow: "hidden",
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              textShadow: "0 1px 3px rgba(0,0,0,0.4)",
-            }}
-          >
+        <div className="absolute bottom-0 left-0 right-0 pt-8 pb-2.5 px-2.5 bg-gradient-to-t from-black/85 via-black/35 to-transparent">
+          <p className="text-white font-bold text-[13px] leading-snug line-clamp-2 drop-shadow-sm">
             {candidate.name}
           </p>
           {candidate.department && (
-            <p
-              style={{
-                color: "rgba(255,255,255,0.65)",
-                fontSize: 11,
-                margin: "2px 0 0",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
+            <p className="text-white/65 text-[11px] mt-0.5 truncate">
               {candidate.department}
             </p>
           )}
         </div>
       </div>
 
-      {/* Stats */}
-      <div style={{ padding: "10px 11px 12px" }}>
-        {/* Vote count + share % */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 7,
-          }}
-        >
-          {/* <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 500 }}>
-            {(candidate.totalVotes || 0).toLocaleString()} votes
-          </span> */}
-          <span style={{ fontSize: 12, fontWeight: 700, color: "#d97706" }}>
-            {sharePct}%
-          </span>
+      <div className="px-2.5 pt-2.5 pb-3">
+        <div className="flex items-center justify-end mb-1.5">
+          <span className="text-xs font-bold text-gold-600">{sharePct}%</span>
         </div>
 
-        {/* Relative progress bar */}
-        <div
-          style={{
-            height: 6,
-            background: "#f3f4f6",
-            borderRadius: 999,
-            overflow: "hidden",
-            marginBottom: 8,
-          }}
-        >
+        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-2">
           <div
-            style={{
-              height: "100%",
-              borderRadius: 999,
-              width: `${relPct}%`,
-              background: isLeader
-                ? "linear-gradient(90deg, #fbbf24, #f59e0b)"
-                : "linear-gradient(90deg, #d1d5db, #9ca3af)",
-              transition: "width 0.7s ease-out",
-            }}
+            className={`h-full rounded-full transition-all duration-700 ease-out ${
+              isLeader
+                ? "bg-gradient-to-r from-gold-400 to-gold-600"
+                : "bg-gradient-to-r from-gray-300 to-gray-400"
+            }`}
+            style={{ width: `${relPct}%` }}
           />
         </div>
 
-        {/* CTA */}
         {isOpen ? (
-          <p
-            style={{
-              fontSize: 11,
-              color: "#d97706",
-              fontWeight: 700,
-              margin: 0,
-              textAlign: "right",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-end",
-              gap: 3,
-            }}
-          >
+          <p className="text-2xs text-gold-600 font-bold text-right flex items-center justify-end gap-1">
             Vote <ArrowRight size={11} />
           </p>
         ) : (
-          <p
-            style={{
-              fontSize: 11,
-              color: "#9ca3af",
-              margin: 0,
-              textAlign: "center",
-            }}
-          >
-            Voting closed
-          </p>
+          <p className="text-2xs text-gray-400 text-center">Voting closed</p>
         )}
       </div>
     </Link>

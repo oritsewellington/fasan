@@ -53,6 +53,18 @@ const GROUP_COLORS = {
   General: "from-orange-400 to-gold-500",
 };
 
+const MR_MISS_FASA_BANNER = "/mr-miss-fasa.jpeg";
+const DEFAULT_EVENT_BANNER = "/fasa-banner.jpeg";
+
+function isMrMissFasaEvent(event) {
+  const name = (event.category || event.title || "")
+    .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return name === "mr fasa" || name === "miss fasa";
+}
+
 const CATEGORIES_PER_PAGE = 8;
 const TOP_STANDINGS_COUNT = 6;
 
@@ -60,64 +72,57 @@ function useWelcomeConfetti(durationMs = 6000) {
   useEffect(() => {
     const end = Date.now() + durationMs;
 
-    // A premium, cohesive luxury palette (Gold, Emerald, Champagne, Muted Blue, Rose, Deep Purple)
     const luxuryColors = [
-      "#d4af37", // Metallic Gold
-      "#f3e5ab", // Champagne
-      "#10b981", // Soft Emerald
-      "#3b82f6", // Premium Blue
-      "#ec4899", // Rose Pink
-      "#8b5cf6", // Deep Purple
-      "#ffffff", // Crisp White
+      "#d4af37",
+      "#f3e5ab",
+      "#10b981",
+      "#3b82f6",
+      "#ec4899",
+      "#8b5cf6",
+      "#ffffff",
     ];
 
-    // Elegant elongated ribbon shape
     const ribbonShape = confetti.shapeFromPath({
       path: "M0 0 L3 0 L3 20 L0 20 Z",
     });
 
-    // 1. FIRST BLAST: Cinematic opening bursts soaring high from the bottom corners
     confetti({
       particleCount: 90,
       spread: 65,
-      origin: { x: 0, y: 0.9 }, // Bottom Left
+      origin: { x: 0, y: 0.9 },
       colors: luxuryColors,
-      startVelocity: 55, // Pushes the particles high up toward the center
-      gravity: 0.9, // Lower gravity allows them to stay airborne longer
+      startVelocity: 55,
+      gravity: 0.9,
       scalar: 1.2,
     });
 
     confetti({
       particleCount: 90,
       spread: 65,
-      origin: { x: 1, y: 0.9 }, // Bottom Right
+      origin: { x: 1, y: 0.9 },
       colors: luxuryColors,
-      startVelocity: 55, // Pushes the particles high up toward the center
-      gravity: 0.9, // Lower gravity allows them to stay airborne longer
+      startVelocity: 55,
+      gravity: 0.9,
       scalar: 1.2,
     });
 
     let frameId;
 
-    // 2. CONTINUOUS CASCADE: Smooth, slow downpour from the top screen edge
     (function frame() {
-      // Fluidly generates random top entry points across the screen width
       const randomX = Math.random();
 
-      // Softly falling luxury ribbons
       confetti({
         particleCount: 1,
         shapes: [ribbonShape],
         colors: luxuryColors,
         origin: { x: randomX, y: -0.1 },
-        startVelocity: 0, // Let gravity seamlessly handle the drop trajectory
-        gravity: 0.4, // Elegant, slow drift down
+        startVelocity: 0,
+        gravity: 0.4,
         drift: (Math.random() - 0.5) * 1.5,
-        scalar: 1.4, // Keeps ribbons distinct and visible
+        scalar: 1.4,
         ticks: 500,
       });
 
-      // Shimmering micro-dots (Adds a magical sparkle texture layer)
       confetti({
         particleCount: 2,
         shapes: ["circle"],
@@ -126,22 +131,21 @@ function useWelcomeConfetti(durationMs = 6000) {
         startVelocity: Math.random() * 5 + 2,
         gravity: 0.5,
         drift: (Math.random() - 0.5) * 2.5,
-        scalar: 0.6, // Small particle sizes create mock 3D depth of field
+        scalar: 0.6,
         ticks: 400,
       });
 
-      // Continue animating loop until duration expires
       if (Date.now() < end) {
         frameId = requestAnimationFrame(frame);
       }
     })();
 
-    // Cleanup cycle loop on component unmount
     return () => {
       cancelAnimationFrame(frameId);
     };
   }, [durationMs]);
 }
+
 export default function HomePage() {
   const [activeGroup, setActiveGroup] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
@@ -155,7 +159,6 @@ export default function HomePage() {
   const { data: polls = [], isLoading: pollsLoading } =
     useGetAllPollsQuery(undefined);
 
-  // A single flag for "do we actually know the real numbers yet"
   const statsLoading = eventsLoading || catLoading;
 
   const totalCategories = categories.length;
@@ -171,9 +174,6 @@ export default function HomePage() {
     0,
   );
 
-  // Top standings: polls with a declared leader, ranked by leader's share
-  // of that event's total votes. Falls back gracefully if leaderVotes
-  // isn't present on a given poll — those just sort to the bottom.
   const topStandings = useMemo(() => {
     return polls
       .filter((p) => p.leaderName && p.totalVotes > 0)
@@ -191,8 +191,6 @@ export default function HomePage() {
       ? categories
       : categories.filter((c) => c.group === activeGroup);
 
-  // Reset to page 1 whenever the filter changes so users don't land on an
-  // empty page 5 of a 2-page filtered result.
   useEffect(() => {
     setCurrentPage(1);
   }, [activeGroup]);
@@ -201,7 +199,6 @@ export default function HomePage() {
     1,
     Math.ceil(filteredCategories.length / CATEGORIES_PER_PAGE),
   );
-  // Guard against a stale page number if the filtered set shrinks.
   const safePage = Math.min(currentPage, totalPages);
   const startIdx = (safePage - 1) * CATEGORIES_PER_PAGE;
   const paginatedCategories = filteredCategories.slice(
@@ -220,7 +217,7 @@ export default function HomePage() {
 
   return (
     <div className="animate-fade-in">
-      <section className="relative bg-hero-pattern overflow-hidden min-h-[90vh] flex flex-col justify-center">
+      <section className="relative bg-hero-pattern overflow-hidden">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div
             className="particle w-64 h-64 opacity-20"
@@ -261,61 +258,78 @@ export default function HomePage() {
           </svg>
         </div>
 
-        <div className="page-container relative z-10 pt-12 pb-20 text-center">
-          <div className="inline-flex items-center gap-2 px-5 py-2 bg-gold-500/15 border border-gold-500/30 rounded-full text-gold-300 text-xs font-bold tracking-widest uppercase mb-8 animate-fade-in">
-            <span className="w-2 h-2 bg-gold-400 rounded-full animate-pulse" />
-            FASAN Awards 2026 — University of Benin
-          </div>
+        <div className="page-container relative z-10 pt-14 pb-20">
+          <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-10 items-center">
+            {/* ── Left: message + CTA ─────────────────────────────────── */}
+            <div className="text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-5 py-2 bg-gold-500/15 border border-gold-500/30 rounded-full text-gold-300 text-xs font-bold tracking-widest uppercase mb-8 animate-fade-in">
+                <span className="w-2 h-2 bg-gold-400 rounded-full animate-pulse" />
+                FASAN Awards 2026 — University of Benin
+              </div>
 
-          <h1 className="font-body text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-[1.05] mb-6 text-balance">
-            <span className="block">Celebrate</span>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-gold-300 via-gold-400 to-gold-600">
-              Excellence &amp;
-            </span>
-            <span className="block">Greatness</span>
-          </h1>
+              <h1 className="font-body text-5xl sm:text-6xl xl:text-7xl font-extrabold text-white leading-[1.05] mb-6 text-balance">
+                <span className="block">Celebrate</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-gold-300 via-gold-400 to-gold-600">
+                  Excellence &amp;
+                </span>
+                <span className="block">Greatness</span>
+              </h1>
 
-          <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto mb-4 font-light leading-relaxed">
-            {statsLoading ? (
-              <span className="inline-block h-6 w-64 max-w-full bg-white/10 rounded-md animate-pulse align-middle" />
-            ) : (
-              <>
-                {totalCategories} award categories. Vote for the best minds,
-                leaders, artists, and icons of the Faculty of Arts, UNIBEN.
-              </>
-            )}
-          </p>
-          <p className="text-sm text-gold-400 font-medium mb-10">
-            {statsLoading ? (
-              <span className="inline-block h-4 w-48 bg-gold-500/15 rounded-md animate-pulse align-middle" />
-            ) : (
-              <>
-                {formatNumber(totalVotesAcrossEvents)}+ votes cast •{" "}
-                {liveEvents.length} live event
-                {liveEvents.length !== 1 ? "s" : ""}
-              </>
-            )}
-          </p>
+              <p className="text-lg sm:text-xl text-gray-300 max-w-xl mx-auto lg:mx-0 mb-4 font-light leading-relaxed">
+                {statsLoading ? (
+                  <span className="inline-block h-6 w-64 max-w-full bg-white/10 rounded-md animate-pulse align-middle" />
+                ) : (
+                  <>
+                    {totalCategories} award categories. Vote for the best minds,
+                    leaders, artists, and icons of the Faculty of Arts, UNIBEN.
+                  </>
+                )}
+              </p>
+              {/* <p className="text-sm text-gold-400 font-medium mb-10">
+                {statsLoading ? (
+                  <span className="inline-block h-4 w-48 bg-gold-500/15 rounded-md animate-pulse align-middle" />
+                ) : (
+                  <>
+                    {formatNumber(totalVotesAcrossEvents)}+ votes cast •{" "}
+                    {liveEvents.length} live event
+                    {liveEvents.length !== 1 ? "s" : ""}
+                  </>
+                )}
+              </p> */}
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href="#categories"
-              className="group btn-primary text-base px-10 py-4 shadow-gold-lg animate-pulse-gold"
-            >
-              <Trophy size={20} />
-              Find Your Category
-              <ArrowRight
-                size={17}
-                className="group-hover:translate-x-1 transition-transform"
-              />
-            </a>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <a
+                  href="#categories"
+                  className="group btn-primary text-base px-10 py-4 shadow-gold-lg animate-pulse-gold w-full sm:w-auto justify-center"
+                >
+                  <Trophy size={20} />
+                  Find Your Category
+                  <ArrowRight
+                    size={17}
+                    className="group-hover:translate-x-1 transition-transform"
+                  />
+                </a>
 
-            <Link
-              to="/about"
-              className="btn-secondary text-base px-10 py-4 bg-white/10 border-white/20 text-white hover:bg-white/20"
-            >
-              Learn More
-            </Link>
+                <Link
+                  to="/about"
+                  className="btn-secondary text-base px-10 py-4 bg-white/10 border-white/20 text-white hover:bg-white/20 w-full sm:w-auto justify-center"
+                >
+                  Learn More
+                </Link>
+              </div>
+            </div>
+            <div className="flex justify-center lg:justify-end">
+              <div className="relative">
+                <div className="absolute -inset-6 bg-gold-500/20 blur-3xl rounded-full pointer-events-none" />
+                <img
+                  src="/fasa-banner.jpeg"
+                  alt="FASAN Awards 2026 — A Vintage Affair: A Night of Timeless Elegance. Dinner & Award Night, red carpet 6PM, main event 8PM. Vintage glamour / black tie dress code."
+                  className="relative w-auto h-auto max-w-full sm:max-w-xs md:max-w-sm lg:max-w-[300px] xl:max-w-sm max-h-[65vh] mx-auto rounded-2xl shadow-2xl shadow-black/50 ring-1 ring-gold-400/20"
+                  loading="eager"
+                  decoding="async"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-10 mt-16">
@@ -331,10 +345,10 @@ export default function HomePage() {
                     value: totalCategories.toString(),
                     label: "Award Categories",
                   },
-                  {
-                    value: `${formatNumber(totalVotesAcrossEvents)}+`,
-                    label: "Votes Cast",
-                  },
+                  // {
+                  //   value: `${formatNumber(totalVotesAcrossEvents)}+`,
+                  //   label: "Votes Cast",
+                  // },
                   { value: "100%", label: "Secure Payments" },
                   { value: liveEvents.length.toString(), label: "Live Events" },
                 ].map(({ value, label }) => (
@@ -458,12 +472,12 @@ export default function HomePage() {
                   )}
 
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
-                    <span className="text-xs text-gray-400">
+                    {/* <span className="text-xs text-gray-400">
                       {poll.totalVotes >= 100
                         ? `${poll.totalVotes.toLocaleString()}+`
                         : poll.totalVotes.toLocaleString()}{" "}
                       votes
-                    </span>
+                    </span> */}
                     <span className="text-xs font-semibold text-gold-600 flex items-center gap-1 group-hover:gap-2 transition-all">
                       View standings <ChevronRight size={12} />
                     </span>
@@ -533,7 +547,6 @@ export default function HomePage() {
                 })}
               </div>
 
-              {/* Results count */}
               <div className="flex items-center justify-between mb-4 px-1">
                 <p className="text-xs text-gray-400">
                   Showing{" "}
@@ -704,12 +717,6 @@ export default function HomePage() {
   );
 }
 
-/**
- * Clean numbered pagination with smart truncation.
- * Shows: [Prev] 1 … 4 5 6 … 24 [Next]
- * Never renders more than ~7 page buttons regardless of total pages,
- * so this stays usable even with 100+ categories.
- */
 function Pagination({ currentPage, totalPages, onPageChange }) {
   const getPageNumbers = () => {
     const delta = 1;
@@ -794,29 +801,42 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
 
 function EventCard({ event }) {
   const status = getEventStatus(event.startDate, event.endDate, event.isOpen);
+  const isFlagship = isMrMissFasaEvent(event);
+  const bannerSrc =
+    event.bannerImage ||
+    (isFlagship ? MR_MISS_FASA_BANNER : DEFAULT_EVENT_BANNER);
+
   return (
     <Link
       to={`/events/${event._id}`}
-      className="card block overflow-hidden group transition-all duration-200 hover:-translate-y-1 hover:shadow-card-hover"
+      className={`card block overflow-hidden group transition-all duration-200 hover:-translate-y-1 hover:shadow-card-hover ${
+        isFlagship ? "ring-1 ring-gold-400/40" : ""
+      }`}
     >
-      {event.bannerImage ? (
+      <div className="relative w-full h-44 overflow-hidden">
         <img
-          src={event.bannerImage}
+          src={bannerSrc}
           alt={event.title}
-          className="w-full h-44 object-cover"
+          className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${
+            isFlagship ? "object-top" : "object-center"
+          }`}
         />
-      ) : (
-        <div className="w-full h-44 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center relative overflow-hidden">
-          <Crown size={48} className="text-gold-400/50 relative z-10" />
-          {event.category && (
-            <div className="absolute bottom-3 left-0 right-0 text-center">
-              <span className="text-xs text-gold-300/70 font-medium">
-                {event.category}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
+        <span className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 rounded-full bg-black/60 backdrop-blur-sm text-white text-2xs font-semibold">
+          <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />{" "}
+          LIVE
+        </span>
+        {isFlagship && (
+          <span className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gold-500/90 backdrop-blur-sm text-black text-2xs font-bold">
+            <Crown size={11} /> FLAGSHIP
+          </span>
+        )}
+        <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/50 to-transparent" />
+        {event.category && (
+          <span className="absolute bottom-2.5 left-3 text-xs text-white/90 font-medium drop-shadow-sm">
+            {event.category}
+          </span>
+        )}
+      </div>
       <div className="p-5">
         <div className="flex items-center justify-between gap-2 mb-3">
           <EventStatusBadge status={status} />

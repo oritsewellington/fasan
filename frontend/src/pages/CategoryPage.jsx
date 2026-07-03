@@ -100,9 +100,9 @@ function CategoryEvent({ event }) {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-3">
           <EventStatusBadge status={status} />
-          <span className="text-sm text-gray-500">
+          {/* <span className="text-sm text-gray-500">
             {totalVotes.toLocaleString()} votes cast
-          </span>
+          </span> */}
         </div>
         {votingOpen && (
           <CountdownTimer targetDate={event.endDate} label="Closes in" />

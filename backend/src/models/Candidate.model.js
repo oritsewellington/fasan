@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 const candidateSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    bio: { type: String, default: "" },
     department: { type: String, default: "" },
     level: { type: String, default: "" },
 

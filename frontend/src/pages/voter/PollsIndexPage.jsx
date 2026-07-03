@@ -160,12 +160,12 @@ export default function PollsIndexPage() {
                 )}
 
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
-                  <span className="text-xs text-gray-400">
+                  {/* <span className="text-xs text-gray-400">
                     {poll.totalVotes >= 100
                       ? `${poll.totalVotes.toLocaleString()}+`
                       : poll.totalVotes.toLocaleString()}{" "}
                     votes
-                  </span>
+                  </span> */}
                   <span className="text-xs font-semibold text-gold-600 flex items-center gap-1">
                     View standings <ChevronRight size={12} />
                   </span>
