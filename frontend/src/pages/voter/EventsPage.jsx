@@ -27,8 +27,8 @@ import {
 const STATUS_FILTERS = ["all", "open", "upcoming", "closed"];
 const EVENTS_PER_PAGE = 9;
 
-const MR_MISS_FASA_BANNER = "/mr-miss-fasa.jpeg";
-const DEFAULT_EVENT_BANNER = "/fasa-banner.jpeg";
+const MR_MISS_FASA_BANNER = "/mr-miss-fasa.webp";
+const DEFAULT_EVENT_BANNER = "/fasa-banner.webp";
 
 function isMrMissFasaEvent(event) {
   const name = (event.category || event.title || "")
