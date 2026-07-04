@@ -34,8 +34,8 @@ const CANDIDATES_PER_PAGE = 12;
 // Same flagship-detection + banner fallback logic as the events list, kept
 // in sync so a candidate lands on a detail page that matches the card
 // they clicked from.
-const MR_MISS_FASA_BANNER = "/mr-miss-fasa.jpeg";
-const DEFAULT_EVENT_BANNER = "/fasa-banner.jpeg";
+const MR_MISS_FASA_BANNER = "/mr-miss-fasa.webp";
+const DEFAULT_EVENT_BANNER = "/fasa-banner.webp";
 
 function isMrMissFasaEvent(event) {
   const name = (event.category || event.title || "")

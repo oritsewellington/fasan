@@ -53,8 +53,8 @@ const GROUP_COLORS = {
   General: "from-orange-400 to-gold-500",
 };
 
-const MR_MISS_FASA_BANNER = "/mr-miss-fasa.jpeg";
-const DEFAULT_EVENT_BANNER = "/fasa-banner.jpeg";
+const MR_MISS_FASA_BANNER = "/mr-miss-fasa.webp";
+const DEFAULT_EVENT_BANNER = "/fasa-banner.webp";
 
 function isMrMissFasaEvent(event) {
   const name = (event.category || event.title || "")
@@ -322,7 +322,7 @@ export default function HomePage() {
               <div className="relative">
                 <div className="absolute -inset-6 bg-gold-500/20 blur-3xl rounded-full pointer-events-none" />
                 <img
-                  src="/fasa-banner.jpeg"
+                  src="/fasa-banner.webp"
                   alt="FASAN Awards 2026 — A Vintage Affair: A Night of Timeless Elegance. Dinner & Award Night, red carpet 6PM, main event 8PM. Vintage glamour / black tie dress code."
                   className="relative w-auto h-auto max-w-full sm:max-w-xs md:max-w-sm lg:max-w-[300px] xl:max-w-sm max-h-[65vh] mx-auto rounded-2xl shadow-2xl shadow-black/50 ring-1 ring-gold-400/20"
                   loading="eager"
