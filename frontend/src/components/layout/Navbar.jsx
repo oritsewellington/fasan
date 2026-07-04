@@ -55,21 +55,44 @@ export default function Navbar() {
       }`}
     >
       <nav className="page-container flex items-center justify-between h-16">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 bg-gradient-to-br from-gold-400 to-gold-600 rounded-xl flex items-center justify-center shadow-gold group-hover:scale-105 transition-transform">
-            <Crown size={18} className="text-white" />
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="relative flex-shrink-0">
+            <div className="absolute inset-0 bg-gold-400/40 blur-lg rounded-full scale-110 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-gold-300 via-gold-500 to-gold-700 flex items-center justify-center shadow-gold ring-1 ring-gold-200/50 group-hover:scale-105 group-hover:rotate-[-4deg] transition-transform duration-300">
+              <div className="absolute inset-[3px] rounded-[9px] border border-white/25" />
+              <Crown
+                size={18}
+                className="text-white relative z-10"
+                strokeWidth={2.25}
+              />
+            </div>
           </div>
+
           <div className="leading-none">
+            <div className="flex items-baseline gap-1.5">
+              <span
+                className={`font-display font-extrabold text-lg tracking-tight transition-colors ${
+                  !scrolled && isHome ? "text-white" : "text-gray-900"
+                }`}
+              >
+                FASA
+              </span>
+              <span
+                className={`font-display font-medium text-lg tracking-tight transition-colors ${
+                  !scrolled && isHome ? "text-white/70" : "text-gray-400"
+                }`}
+              >
+                Awards
+              </span>
+            </div>
             <span
-              className={`font-display font-bold text-lg transition-colors ${!scrolled && isHome ? "text-white" : "text-gray-900"}`}
+              className={`inline-flex items-center mt-1 px-1.5 py-[1px] rounded-full text-[9px] font-bold tracking-widest ${
+                !scrolled && isHome
+                  ? "bg-white/15 text-gold-300"
+                  : "bg-gold-50 text-gold-700 border border-gold-200"
+              }`}
             >
-              FASA Awards
-            </span>
-            <span
-              className={`block text-2xs font-medium tracking-wider transition-colors ${!scrolled && isHome ? "text-gold-300" : "text-gold-600"}`}
-            >
-              2026
+              2026 EDITION
             </span>
           </div>
         </Link>
