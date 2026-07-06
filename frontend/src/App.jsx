@@ -1,5 +1,8 @@
 import { Routes, Route, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import MaintenanceGate, {
+  MAINTENANCE_MODE,
+} from "./components/MaintenanceGate.jsx";
 
 import Layout from "./components/layout/Layout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -41,6 +44,9 @@ function ScrollToTop() {
 }
 
 export default function App() {
+  if (MAINTENANCE_MODE) {
+    return <MaintenanceGate />;
+  }
   return (
     <>
       <ScrollToTop />
