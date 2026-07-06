@@ -47,14 +47,15 @@ export default function Navbar() {
   const isHome = location.pathname === "/";
 
   return (
-    <header
-      className={`sticky top-0 z-50 transition-all duration-300 ${
-        scrolled || !isHome
-          ? "bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm"
-          : "bg-transparent"
-      }`}
-    >
-      <nav className="page-container flex items-center justify-between h-16">
+    <header className="sticky top-0 z-50">
+      <div
+        className={`absolute inset-0 transition-all duration-300 ${
+          scrolled || !isHome
+            ? "bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm"
+            : "bg-gradient-to-b from-black/60 via-black/30 to-transparent"
+        }`}
+      />
+      <nav className="relative page-container flex items-center justify-between h-16">
         <Link to="/" className="flex items-center gap-3 group">
           <div className="relative flex-shrink-0">
             <div className="absolute inset-0 bg-gold-400/40 blur-lg rounded-full scale-110 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

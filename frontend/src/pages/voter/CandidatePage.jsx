@@ -218,11 +218,15 @@ export default function CandidatePage() {
               {/* Hero photo */}
               <div className="relative overflow-hidden">
                 {candidate.photo ? (
-                  <img
-                    src={candidate.photo}
-                    alt={candidate.name}
-                    className="w-full h-[min(75vw,450px)] lg:h-[480px] object-cover object-top block"
-                  />
+                  <div className="relative h-[620px] overflow-hidden rounded-t-3xl">
+                    <img
+                      src={candidate.photo}
+                      alt={candidate.name}
+                      className="w-full h-full object-cover object-[center_25%]"
+                    />
+
+                    <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                  </div>
                 ) : (
                   <div className="w-full h-[min(65vw,320px)] lg:h-[480px] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
                     <Crown size={56} className="text-gold-400/40" />
