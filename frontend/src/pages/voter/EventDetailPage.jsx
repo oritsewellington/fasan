@@ -233,24 +233,24 @@ export default function EventDetailPage() {
           <>
             <div className="flex items-end justify-between flex-wrap gap-2 mb-1">
               <div>
-                <h2 className="font-display text-xl font-extrabold text-gray-900">
+                <h2 className="font-display text-xl font-extrabold text-zinc-900">
                   {ranked.length} Candidate{ranked.length !== 1 ? "s" : ""}
                 </h2>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-xs text-zinc-400 mt-0.5">
                   Bars show position relative to the leader
                 </p>
               </div>
             </div>
 
             {totalPages > 1 && (
-              <p className="text-xs text-gray-400 mb-4">
+              <p className="text-xs text-zinc-400 mb-4">
                 Showing{" "}
-                <span className="font-semibold text-gray-600">
+                <span className="font-semibold text-zinc-600">
                   {startIdx + 1}–
                   {Math.min(startIdx + CANDIDATES_PER_PAGE, ranked.length)}
                 </span>{" "}
                 of{" "}
-                <span className="font-semibold text-gray-600">
+                <span className="font-semibold text-zinc-600">
                   {ranked.length}
                 </span>
               </p>
@@ -283,9 +283,9 @@ export default function EventDetailPage() {
             )}
 
             {totalVotes > 0 && (
-              <div className="flex items-center gap-2.5 mt-6 px-4 py-3 bg-white rounded-xl border border-gray-100">
-                <Trophy size={15} className="text-gold-500 flex-shrink-0" />
-                <p className="text-xs text-gray-500 leading-relaxed">
+              <div className="flex items-center gap-2.5 mt-6 px-4 py-3 bg-white rounded-xl border border-zinc-100">
+                <Trophy size={15} className="text-ember-500 flex-shrink-0" />
+                <p className="text-xs text-zinc-500 leading-relaxed">
                   Progress bars show each candidate's votes relative to the
                   current leader. The leader always shows a full bar.
                   Percentages show share of total votes.
@@ -387,6 +387,7 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
     </nav>
   );
 }
+
 function CandidateCard({
   candidate,
   rank,
@@ -411,7 +412,6 @@ function CandidateCard({
     .map((w) => w[0]?.toUpperCase())
     .join("");
 
-  // A candidate has votes only if their count is above zero
   const hasVotes = (candidate.totalVotes || 0) > 0;
   const showPhoto = candidate.photo && !imgError;
 
@@ -446,17 +446,17 @@ function CandidateCard({
           </div>
         )}
 
-        {/* ── Fixed Rank / Medal Badge Logic ── */}
         <div className="absolute top-2 left-2">
-          {hasVotes && rank <= 3 ? (
-            <span className="text-xl drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
-              {MEDALS[rank - 1]}
-            </span>
-          ) : (
-            <span className="w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm text-2xs font-extrabold text-zinc-700 flex items-center justify-center shadow-sm">
-              {rank}
-            </span>
-          )}
+          {hasVotes &&
+            (rank <= 3 ? (
+              <span className="text-xl drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+                {MEDALS[rank - 1]}
+              </span>
+            ) : (
+              <span className="w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm text-2xs font-extrabold text-zinc-700 flex items-center justify-center shadow-sm">
+                {rank}
+              </span>
+            ))}
         </div>
 
         <div className="absolute top-2 right-2 max-w-[45%] px-1.5 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold truncate">
