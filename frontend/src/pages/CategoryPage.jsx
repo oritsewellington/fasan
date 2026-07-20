@@ -177,9 +177,9 @@ function CandidateCard({ candidate, rank, totalVotes, eventId, isOpen }) {
       </div>
       <div className="p-3.5">
         <div className="flex items-center justify-between text-xs mb-2">
-          <span className="text-gray-500">
+          {/* <span className="text-gray-500">
             {(candidate.totalVotes || 0).toLocaleString()} votes
-          </span>
+          </span> */}
           <span className="font-semibold text-gold-600">
             {calcPercent(candidate.totalVotes, totalVotes).toFixed(1)}%
           </span>
