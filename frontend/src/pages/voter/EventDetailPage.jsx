@@ -284,7 +284,7 @@ export default function EventDetailPage() {
 
             {totalVotes > 0 && (
               <div className="flex items-center gap-2.5 mt-6 px-4 py-3 bg-white rounded-xl border border-zinc-100">
-                <Trophy size={15} className="text-ember-500 flex-shrink-0" />
+                <Trophy size={15} className="text-gold-500 flex-shrink-0" />
                 <p className="text-xs text-zinc-500 leading-relaxed">
                   Progress bars show each candidate's votes relative to the
                   current leader. The leader always shows a full bar.
@@ -424,7 +424,7 @@ function CandidateCard({
           : "pointer-events-none opacity-80"
       } ${
         isLeader
-          ? "border-2 border-ember-400 shadow-[0_4px_20px_rgba(217,164,65,0.18)]"
+          ? "border-2 border-gold-400 shadow-[0_4px_20px_rgba(217,164,65,0.18)]"
           : "border border-zinc-100 shadow-card"
       }`}
     >
@@ -440,7 +440,7 @@ function CandidateCard({
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <div className="w-13 h-13 rounded-full bg-gradient-to-br from-ember-400 to-ember-600 flex items-center justify-center text-white font-extrabold text-lg shadow-sm">
+            <div className="w-13 h-13 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-white font-extrabold text-lg shadow-sm">
               {initials || <Crown size={22} />}
             </div>
           </div>
@@ -461,7 +461,7 @@ function CandidateCard({
 
         <div className="absolute top-2 right-2 max-w-[45%] px-1.5 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold truncate">
           {candidate.candidateCode ||
-            "IX-" + String(candidate.candidateNumber).padStart(4, "0")}
+            "FASA-" + String(candidate.candidateNumber).padStart(4, "0")}
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 pt-8 pb-2.5 px-2.5 bg-gradient-to-t from-black/85 via-black/35 to-transparent">
@@ -478,14 +478,14 @@ function CandidateCard({
 
       <div className="px-2.5 pt-2.5 pb-3">
         <div className="flex items-center justify-end mb-1.5">
-          <span className="text-xs font-bold text-ember-600">{sharePct}%</span>
+          <span className="text-xs font-bold text-gold-600">{sharePct}%</span>
         </div>
 
         <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden mb-2">
           <div
             className={`h-full rounded-full transition-all duration-700 ease-out ${
               isLeader
-                ? "bg-gradient-to-r from-ember-400 to-ember-600"
+                ? "bg-gradient-to-r from-gold-400 to-gold-600"
                 : "bg-gradient-to-r from-zinc-300 to-zinc-400"
             }`}
             style={{ width: `${relPct}%` }}
@@ -493,7 +493,7 @@ function CandidateCard({
         </div>
 
         {isOpen ? (
-          <p className="text-2xs text-ember-600 font-bold text-right flex items-center justify-end gap-1">
+          <p className="text-2xs text-gold-600 font-bold text-right flex items-center justify-end gap-1">
             Vote <ArrowRight size={11} />
           </p>
         ) : (
