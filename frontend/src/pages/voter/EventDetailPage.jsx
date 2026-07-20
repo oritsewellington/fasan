@@ -387,7 +387,6 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
     </nav>
   );
 }
-
 function CandidateCard({
   candidate,
   rank,
@@ -412,6 +411,8 @@ function CandidateCard({
     .map((w) => w[0]?.toUpperCase())
     .join("");
 
+  // A candidate has votes only if their count is above zero
+  const hasVotes = (candidate.totalVotes || 0) > 0;
   const showPhoto = candidate.photo && !imgError;
 
   return (
@@ -423,11 +424,11 @@ function CandidateCard({
           : "pointer-events-none opacity-80"
       } ${
         isLeader
-          ? "border-2 border-gold-400 shadow-[0_4px_20px_rgba(245,158,11,0.18)]"
-          : "border border-gray-100 shadow-card"
+          ? "border-2 border-ember-400 shadow-[0_4px_20px_rgba(217,164,65,0.18)]"
+          : "border border-zinc-100 shadow-card"
       }`}
     >
-      <div className="relative w-full aspect-[4/5] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+      <div className="relative w-full aspect-[4/5] overflow-hidden bg-gradient-to-br from-zinc-100 to-zinc-200">
         {showPhoto ? (
           <img
             src={candidate.photo}
@@ -439,19 +440,20 @@ function CandidateCard({
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <div className="w-13 h-13 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-white font-extrabold text-lg shadow-sm">
+            <div className="w-13 h-13 rounded-full bg-gradient-to-br from-ember-400 to-ember-600 flex items-center justify-center text-white font-extrabold text-lg shadow-sm">
               {initials || <Crown size={22} />}
             </div>
           </div>
         )}
 
+        {/* ── Fixed Rank / Medal Badge Logic ── */}
         <div className="absolute top-2 left-2">
-          {rank <= 3 ? (
+          {hasVotes && rank <= 3 ? (
             <span className="text-xl drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
               {MEDALS[rank - 1]}
             </span>
           ) : (
-            <span className="w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm text-2xs font-extrabold text-gray-700 flex items-center justify-center shadow-sm">
+            <span className="w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm text-2xs font-extrabold text-zinc-700 flex items-center justify-center shadow-sm">
               {rank}
             </span>
           )}
@@ -459,7 +461,7 @@ function CandidateCard({
 
         <div className="absolute top-2 right-2 max-w-[45%] px-1.5 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold truncate">
           {candidate.candidateCode ||
-            "FASA-" + String(candidate.candidateNumber).padStart(4, "0")}
+            "IX-" + String(candidate.candidateNumber).padStart(4, "0")}
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 pt-8 pb-2.5 px-2.5 bg-gradient-to-t from-black/85 via-black/35 to-transparent">
@@ -476,26 +478,26 @@ function CandidateCard({
 
       <div className="px-2.5 pt-2.5 pb-3">
         <div className="flex items-center justify-end mb-1.5">
-          <span className="text-xs font-bold text-gold-600">{sharePct}%</span>
+          <span className="text-xs font-bold text-ember-600">{sharePct}%</span>
         </div>
 
-        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-2">
+        <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden mb-2">
           <div
             className={`h-full rounded-full transition-all duration-700 ease-out ${
               isLeader
-                ? "bg-gradient-to-r from-gold-400 to-gold-600"
-                : "bg-gradient-to-r from-gray-300 to-gray-400"
+                ? "bg-gradient-to-r from-ember-400 to-ember-600"
+                : "bg-gradient-to-r from-zinc-300 to-zinc-400"
             }`}
             style={{ width: `${relPct}%` }}
           />
         </div>
 
         {isOpen ? (
-          <p className="text-2xs text-gold-600 font-bold text-right flex items-center justify-end gap-1">
+          <p className="text-2xs text-ember-600 font-bold text-right flex items-center justify-end gap-1">
             Vote <ArrowRight size={11} />
           </p>
         ) : (
-          <p className="text-2xs text-gray-400 text-center">Voting closed</p>
+          <p className="text-2xs text-zinc-400 text-center">Voting closed</p>
         )}
       </div>
     </Link>

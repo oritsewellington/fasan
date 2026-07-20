@@ -379,111 +379,93 @@ export default function HomePage() {
         </div>
       </section>
 
-      {liveEvents.length > 0 && (
-        <section className="py-14 bg-gray-50">
-          <div className="page-container">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                  <p className="section-label text-emerald-600">Live Now</p>
-                </div>
-                <h2 className="text-2xl font-body font-bold text-gray-900">
-                  Active Voting Events
-                </h2>
-              </div>
-              <Link
-                to="/events"
-                className="btn-ghost text-gold-600 hover:text-gold-700 hover:bg-gold-50"
-              >
-                View all <ArrowRight size={14} />
-              </Link>
-            </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {liveEvents.slice(0, 3).map((ev) => (
-                <EventCard key={ev._id} event={ev} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* ── Top Standings ─────────────────────────────────────────────── */}
       {!pollsLoading && topStandings.length > 0 && (
-        <section className="py-16 bg-white border-t border-gray-100">
-          <div className="page-container">
+        <section className="py-16 bg-white border-t border-zinc-100">
+          <div className="max-w-7xl mx-auto px-6 lg:px-10">
             <div className="flex items-end justify-between gap-4 mb-8 flex-wrap">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <Flame size={14} className="text-gold-500" />
-                  <p className="section-label text-gold-600">Top Standings</p>
+                  <Flame size={14} className="text-amber-500" />
+                  <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-amber-600">
+                    Top Standings
+                  </p>
                 </div>
-                <h2 className="text-2xl font-body font-bold text-gray-900">
-                  Who's leading right now
+                <h2
+                  style={HEADING_FONT}
+                  className="text-2xl font-bold text-zinc-900"
+                >
+                  Who&rsquo;s leading right now
                 </h2>
               </div>
               <Link
                 to="/polls"
-                className="btn-ghost text-gold-600 hover:text-gold-700 hover:bg-gold-50"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-amber-600 hover:text-amber-700 hover:gap-2 transition-all"
               >
                 View all results <ArrowRight size={14} />
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {topStandings.map((poll, idx) => (
-                <Link
-                  key={poll.eventId}
-                  to={`/events/${poll.eventId}/results`}
-                  className="group card p-5 hover:shadow-card-hover hover:-translate-y-1 transition-all duration-200"
-                >
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <p className="text-xs text-gray-400">
-                      {poll.category || "Uncategorized"}
-                    </p>
-                    <span className="flex items-center gap-1 text-2xs font-bold text-gold-600 bg-gold-50 border border-gold-100 rounded-full px-2 py-0.5">
-                      <Trophy size={10} />
-                    </span>
-                  </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {topStandings.map((poll) => {
+                const hasRealLeader = poll.leaderName && poll.leaderVotes > 0;
 
-                  <h3 className="font-semibold text-gray-900 text-sm leading-snug mb-1 group-hover:text-gold-700 transition-colors truncate">
-                    {poll.eventTitle}
-                  </h3>
-
-                  <p className="text-xs text-gray-500 mb-3">
-                    Leading:{" "}
-                    <span className="font-semibold text-gray-800">
-                      {poll.leaderName}
-                    </span>
-                  </p>
-
-                  {poll.percent != null && (
-                    <>
-                      <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mb-1.5">
-                        <div
-                          className="h-full bg-gradient-to-r from-gold-400 to-gold-600 rounded-full transition-all"
-                          style={{ width: `${Math.min(poll.percent, 100)}%` }}
-                        />
-                      </div>
-                      <p className="text-xs font-bold text-gold-600">
-                        {poll.percent.toFixed(1)}% of votes
+                return (
+                  <Link
+                    key={poll.eventId}
+                    to={`/events/${poll.eventId}/results`}
+                    className="group rounded-3xl bg-white border border-zinc-100 p-5 shadow-[0_2px_10px_-2px_rgba(20,20,25,0.06)] hover:shadow-[0_25px_60px_-15px_rgba(76,95,217,0.2)] hover:-translate-y-1 transition-all duration-300"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <p className="text-xs text-zinc-400">
+                        {poll.category || "Uncategorized"}
                       </p>
-                    </>
-                  )}
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-100 rounded-full px-2 py-0.5">
+                        <Trophy size={10} />
+                      </span>
+                    </div>
 
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
-                    {/* <span className="text-xs text-gray-400">
-                      {poll.totalVotes >= 100
-                        ? `${poll.totalVotes.toLocaleString()}+`
-                        : poll.totalVotes.toLocaleString()}{" "}
-                      votes
-                    </span> */}
-                    <span className="text-xs font-semibold text-gold-600 flex items-center gap-1 group-hover:gap-2 transition-all">
-                      View standings <ChevronRight size={12} />
-                    </span>
-                  </div>
-                </Link>
-              ))}
+                    <h3 className="font-semibold text-zinc-900 text-sm leading-snug mb-1 group-hover:text-amber-700 transition-colors truncate">
+                      {poll.eventTitle}
+                    </h3>
+
+                    {hasRealLeader ? (
+                      <p className="text-xs text-zinc-500 mb-3">
+                        Leading:{" "}
+                        <span className="font-semibold text-zinc-800">
+                          {poll.leaderName}
+                        </span>
+                      </p>
+                    ) : (
+                      <p className="text-xs text-zinc-400 mb-3 italic">
+                        No votes yet
+                      </p>
+                    )}
+
+                    {hasRealLeader && poll.percent != null && (
+                      <>
+                        <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden mb-1.5">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-400 to-indigo-500 rounded-full transition-all"
+                            style={{
+                              width: `${Math.min(poll.percent, 100)}%`,
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs font-bold text-amber-600">
+                          {poll.percent.toFixed(1)}% of votes
+                        </p>
+                      </>
+                    )}
+
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-50">
+                      <span className="text-xs font-semibold text-amber-600 flex items-center gap-1 group-hover:gap-2 transition-all">
+                        View standings <ChevronRight size={12} />
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </section>

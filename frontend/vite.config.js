@@ -7,8 +7,8 @@ export default defineConfig({
   server: {
     // Only used in local dev - Vercel ignores this
     proxy: {
-      "/api": { target: "http://localhost:5000", changeOrigin: true },
-      "/uploads": { target: "http://localhost:5000", changeOrigin: true },
+      "/api": { target: "http://localhost:8080", changeOrigin: true },
+      "/uploads": { target: "http://localhost:8080", changeOrigin: true },
     },
   },
 });

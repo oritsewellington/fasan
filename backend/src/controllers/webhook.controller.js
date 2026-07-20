@@ -34,7 +34,7 @@ export async function paystackWebhook(req, res) {
       return;
     }
 
-    await creditVerifiedVote(vote);
+    await creditVerifiedVote(reference);
   } catch (error) {
     console.error("Error processing Paystack Webhook event:", error);
   }

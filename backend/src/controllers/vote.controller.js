@@ -2,6 +2,7 @@ import axios from "axios";
 import Vote from "../models/Vote.model.js";
 import Event from "../models/Event.model.js";
 import Candidate from "../models/Candidate.model.js";
+import mongoose from "mongoose";
 
 const PAYSTACK_BASE = "https://api.paystack.co";
 const paystackHeaders = () => ({
@@ -9,24 +10,43 @@ const paystackHeaders = () => ({
   "Content-Type": "application/json",
 });
 
-export async function creditVerifiedVote(vote) {
+export async function creditVerifiedVote(reference) {
+  const session = await mongoose.startSession();
   try {
-    if (vote.status === "verified") return vote;
+    let verifiedVote = null;
 
-    vote.status = "verified";
-    await vote.save();
+    await session.withTransaction(async () => {
+      const vote = await Vote.findOneAndUpdate(
+        { reference, status: "pending" },
+        { $set: { status: "verified" } },
+        { new: true, session },
+      );
 
-    await Candidate.findByIdAndUpdate(vote.candidate, {
-      $inc: { totalVotes: vote.votes, totalRevenue: vote.amount },
+      if (!vote) {
+        verifiedVote = await Vote.findOne({ reference }).session(session);
+        return;
+      }
+
+      await Candidate.findByIdAndUpdate(
+        vote.candidate,
+        { $inc: { totalVotes: vote.votes, totalRevenue: vote.amount } },
+        { session },
+      );
+      await Event.findByIdAndUpdate(
+        vote.event,
+        { $inc: { totalVotes: vote.votes, totalRevenue: vote.amount } },
+        { session },
+      );
+
+      verifiedVote = vote;
     });
-    await Event.findByIdAndUpdate(vote.event, {
-      $inc: { totalVotes: vote.votes, totalRevenue: vote.amount },
-    });
 
-    return vote;
+    return verifiedVote;
   } catch (error) {
-    console.error("Error inside creditVerifiedVote routine:", error);
+    console.error("Error inside creditVerifiedVote:", error);
     throw error;
+  } finally {
+    await session.endSession();
   }
 }
 
@@ -128,7 +148,7 @@ export async function verifyPayment(req, res) {
         .json({ message: "Payment amount mismatch. Contact support." });
     }
 
-    await creditVerifiedVote(vote);
+    await creditVerifiedVote(reference);
     res.json({ message: "Vote recorded successfully.", vote });
   } catch (error) {
     console.error("Error in verifyPayment wrapper logic:", error);

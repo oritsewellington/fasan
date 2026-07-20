@@ -50,11 +50,13 @@ export default function PollsIndexPage() {
   return (
     <div className="page-container py-16">
       <div className="text-center mb-12">
-        <p className="section-label mb-3">FASAN Awards 2026</p>
-        <h1 className="font-body text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
+        <p className="section-label text-ember-600 mb-3">
+          Class of INTREPIDUS Awards 2026
+        </p>
+        <h1 className="font-display text-3xl sm:text-4xl font-bold text-zinc-900 mb-3">
           Live Results
         </h1>
-        <p className="text-gray-500 max-w-lg mx-auto text-sm">
+        <p className="text-zinc-500 max-w-lg mx-auto text-sm">
           Current standings across every award category, updated as votes come
           in.
         </p>
@@ -65,7 +67,7 @@ export default function PollsIndexPage() {
           <div className="relative">
             <Search
               size={16}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-300"
             />
             <input
               type="text"
@@ -80,7 +82,7 @@ export default function PollsIndexPage() {
                   setSearch("");
                   setPage(1);
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-300 hover:text-zinc-500"
               >
                 <X size={14} />
               </button>
@@ -93,13 +95,13 @@ export default function PollsIndexPage() {
 
       {isError && (
         <div className="text-center py-16">
-          <AlertTriangle size={24} className="text-gold-500 mx-auto mb-3" />
-          <p className="text-sm text-gray-500 mb-3">
+          <AlertTriangle size={24} className="text-ember-500 mx-auto mb-3" />
+          <p className="text-sm text-zinc-500 mb-3">
             Couldn't load results right now.
           </p>
           <button
             onClick={refetch}
-            className="text-sm font-semibold text-gold-600 hover:text-gold-700"
+            className="text-sm font-semibold text-ember-600 hover:text-ember-700"
           >
             Try again
           </button>
@@ -107,14 +109,14 @@ export default function PollsIndexPage() {
       )}
 
       {!isLoading && !isError && polls.length === 0 && (
-        <p className="text-center text-sm text-gray-400 py-12">
+        <p className="text-center text-sm text-zinc-400 py-12">
           No results yet — voting hasn't started.
         </p>
       )}
 
       {!isLoading && !isError && polls.length > 0 && filtered.length === 0 && (
         <div className="text-center py-16">
-          <p className="text-sm text-gray-400 mb-1">
+          <p className="text-sm text-zinc-400 mb-1">
             No results match "{search}"
           </p>
           <button
@@ -122,7 +124,7 @@ export default function PollsIndexPage() {
               setSearch("");
               setPage(1);
             }}
-            className="text-sm font-semibold text-gold-600 hover:text-gold-700"
+            className="text-sm font-semibold text-ember-600 hover:text-ember-700"
           >
             Clear search
           </button>
@@ -131,55 +133,80 @@ export default function PollsIndexPage() {
 
       {!isLoading && !isError && filtered.length > 0 && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {paginated.map((poll) => (
-              <Link
-                key={poll.eventId}
-                to={`/events/${poll.eventId}/results`}
-                className="card p-5 hover:shadow-card-hover hover:-translate-y-1 transition-all duration-200"
-              >
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <p className="text-xs text-gray-400">
-                    {poll.category || "Uncategorized"}
-                  </p>
-                  <Trophy size={14} className="text-gold-400" />
-                </div>
-                <h3 className="font-semibold text-gray-900 text-sm leading-snug mb-2">
-                  {poll.eventTitle}
-                </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {paginated.map((poll) => {
+              // Guard against the API returning a leaderName even when no
+              // votes have been cast yet — only trust it once totalVotes > 0.
+              const hasVotes = (poll.totalVotes || 0) > 0;
+              const percent =
+                hasVotes && poll.leaderVotes != null
+                  ? (poll.leaderVotes / poll.totalVotes) * 100
+                  : null;
 
-                {poll.leaderName ? (
-                  <p className="text-xs text-gray-500 mb-1">
-                    Leading:{" "}
-                    <span className="font-medium text-gray-800">
-                      {poll.leaderName}
+              return (
+                <Link
+                  key={poll.eventId}
+                  to={`/events/${poll.eventId}/results`}
+                  className="card-hover group p-5"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <p className="text-xs text-zinc-400">
+                      {poll.category || "Uncategorized"}
+                    </p>
+                    <span className="flex items-center gap-1 text-2xs font-bold text-ember-600 bg-ember-50 border border-ember-100 rounded-full px-2 py-0.5">
+                      <Trophy size={10} />
                     </span>
-                  </p>
-                ) : (
-                  <p className="text-xs text-gray-400 mb-1">No votes yet</p>
-                )}
+                  </div>
 
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
-                  {/* <span className="text-xs text-gray-400">
-                    {poll.totalVotes >= 100
-                      ? `${poll.totalVotes.toLocaleString()}+`
-                      : poll.totalVotes.toLocaleString()}{" "}
-                    votes
-                  </span> */}
-                  <span className="text-xs font-semibold text-gold-600 flex items-center gap-1">
-                    View standings <ChevronRight size={12} />
-                  </span>
-                </div>
-              </Link>
-            ))}
+                  <h3 className="font-semibold text-zinc-900 text-sm leading-snug mb-2">
+                    {poll.eventTitle}
+                  </h3>
+
+                  {hasVotes ? (
+                    <p className="text-xs text-zinc-500 mb-3">
+                      Leading:{" "}
+                      <span className="font-medium text-zinc-800">
+                        {poll.leaderName}
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="text-xs text-zinc-400 mb-3">No votes yet</p>
+                  )}
+
+                  {percent != null && (
+                    <>
+                      <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden mb-1.5">
+                        <div
+                          className="h-full bg-gradient-to-r from-ember-400 to-ember-600 rounded-full transition-all"
+                          style={{ width: `${Math.min(percent, 100)}%` }}
+                        />
+                      </div>
+                      <p className="text-xs font-bold text-ember-600">
+                        {percent.toFixed(1)}% of votes
+                      </p>
+                    </>
+                  )}
+
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-50">
+                    <span className="text-xs font-semibold text-ember-600 flex items-center gap-1 group-hover:gap-2 transition-all">
+                      View standings <ChevronRight size={12} />
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-1.5 mt-12">
+            <nav
+              aria-label="Results pagination"
+              className="flex items-center justify-center gap-1.5 mt-12"
+            >
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                aria-label="Previous page"
+                className="flex items-center justify-center w-9 h-9 rounded-full border border-zinc-200 text-zinc-500 hover:border-ember-300 hover:text-ember-600 hover:bg-ember-50 disabled:opacity-30 disabled:pointer-events-none transition-all"
               >
                 <ChevronLeft size={16} />
               </button>
@@ -188,10 +215,11 @@ export default function PollsIndexPage() {
                 <button
                   key={n}
                   onClick={() => setPage(n)}
-                  className={`w-8 h-8 rounded-lg text-xs font-semibold transition-colors ${
+                  aria-current={n === currentPage ? "page" : undefined}
+                  className={`w-9 h-9 rounded-full text-sm font-medium border transition-all ${
                     n === currentPage
-                      ? "bg-gold-500 text-white"
-                      : "text-gray-400 hover:text-gray-700 hover:bg-gray-50"
+                      ? "bg-ember-500 text-white border-ember-500 shadow-sm"
+                      : "bg-white text-zinc-600 border-zinc-200 hover:border-ember-300 hover:text-ember-600 hover:bg-ember-50"
                   }`}
                 >
                   {n}
@@ -201,11 +229,12 @@ export default function PollsIndexPage() {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                aria-label="Next page"
+                className="flex items-center justify-center w-9 h-9 rounded-full border border-zinc-200 text-zinc-500 hover:border-ember-300 hover:text-ember-600 hover:bg-ember-50 disabled:opacity-30 disabled:pointer-events-none transition-all"
               >
                 <ChevronRight size={16} />
               </button>
-            </div>
+            </nav>
           )}
         </>
       )}
