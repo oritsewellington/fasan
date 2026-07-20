@@ -391,10 +391,7 @@ export default function HomePage() {
                     Top Standings
                   </p>
                 </div>
-                <h2
-                  style={HEADING_FONT}
-                  className="text-2xl font-bold text-zinc-900"
-                >
+                <h2 className="text-2xl font-bold text-zinc-900 font-body">
                   Who&rsquo;s leading right now
                 </h2>
               </div>
