@@ -33,8 +33,8 @@ export default function MaintenanceGate() {
         </h1>
 
         <p className="text-gray-400 text-sm sm:text-[15px] leading-relaxed mb-2 max-w-sm mx-auto">
-          FASA Awards 2026 voting is temporarily paused while we finalize some
-          administrative arrangements with our event partners.
+          FASA Awards 2026 voting is temporarily paused while we fixing some
+          bugs
         </p>
         <p className="text-gray-500 text-sm leading-relaxed mb-10 max-w-sm mx-auto">
           We appreciate your patience and expect to be back online shortly. No
