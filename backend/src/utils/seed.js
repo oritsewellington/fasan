@@ -284,7 +284,7 @@ async function seedUsers() {
 
 async function seedCategoriesAndEvents(admin) {
   const startDate = new Date("2026-07-06T00:00:00");
-  const endDate = new Date("2026-08-17T23:59:59");
+  const endDate = new Date("2026-08-10T23:59:59");
 
   let catsCreated = 0,
     catsSkipped = 0,
