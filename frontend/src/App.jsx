@@ -44,9 +44,9 @@ function ScrollToTop() {
 }
 
 export default function App() {
-  if (MAINTENANCE_MODE) {
-    return <MaintenanceGate />;
-  }
+  // if (MAINTENANCE_MODE) {
+  //   return <MaintenanceGate />;
+  // }
   return (
     <>
       <ScrollToTop />
